@@ -21,10 +21,13 @@ import android.net.Uri;
 import android.os.Handler;
 import android.os.Looper;
 import android.text.TextUtils;
+
 import androidx.annotation.CallSuper;
 import androidx.annotation.GuardedBy;
 import androidx.annotation.Nullable;
-import com.zeoflow.z.stream.VolleyLog.MarkerLog;
+
+import com.zeoflow.z.stream.ZStreamLog.MarkerLog;
+
 import java.io.UnsupportedEncodingException;
 import java.net.URLEncoder;
 import java.util.Collections;
@@ -35,95 +38,89 @@ import java.util.Map;
  *
  * @param <T> The type of parsed response this request expects.
  */
-public abstract class Request<T> implements Comparable<Request<T>> {
+public abstract class Request<T> implements Comparable<Request<T>>
+{
 
-    /** Default encoding for POST or PUT parameters. See {@link #getParamsEncoding()}. */
+    /**
+     * Default encoding for POST or PUT parameters. See {@link #getParamsEncoding()}.
+     */
     private static final String DEFAULT_PARAMS_ENCODING = "UTF-8";
-
-    /** Supported request methods. */
-    public interface Method {
-        int DEPRECATED_GET_OR_POST = -1;
-        int GET = 0;
-        int POST = 1;
-        int PUT = 2;
-        int DELETE = 3;
-        int HEAD = 4;
-        int OPTIONS = 5;
-        int TRACE = 6;
-        int PATCH = 7;
-    }
-
-    /** Callback to notify when the network request returns. */
-    /* package */ interface NetworkRequestCompleteListener {
-
-        /** Callback when a network response has been received. */
-        void onResponseReceived(Request<?> request, Response<?> response);
-
-        /** Callback when request returns from network without valid response. */
-        void onNoUsableResponseReceived(Request<?> request);
-    }
-
-    /** An event log tracing the lifetime of this request; for debugging. */
+    /**
+     * An event log tracing the lifetime of this request; for debugging.
+     */
     private final MarkerLog mEventLog = MarkerLog.ENABLED ? new MarkerLog() : null;
-
     /**
      * Request method of this request. Currently supports GET, POST, PUT, DELETE, HEAD, OPTIONS,
      * TRACE, and PATCH.
      */
     private final int mMethod;
-
-    /** URL of this request. */
+    /**
+     * URL of this request.
+     */
     private final String mUrl;
-
-    /** Default tag for {@link TrafficStats}. */
+    /**
+     * Default tag for {@link TrafficStats}.
+     */
     private final int mDefaultTrafficStatsTag;
-
-    /** Lock to guard state which can be mutated after a request is added to the queue. */
+    /**
+     * Lock to guard state which can be mutated after a request is added to the queue.
+     */
     private final Object mLock = new Object();
-
-    /** Listener interface for errors. */
+    /**
+     * Listener interface for errors.
+     */
     @Nullable
     @GuardedBy("mLock")
     private Response.ErrorListener mErrorListener;
-
-    /** Sequence number of this request, used to enforce FIFO ordering. */
+    /**
+     * Sequence number of this request, used to enforce FIFO ordering.
+     */
     private Integer mSequence;
-
-    /** The request queue this request is associated with. */
+    /**
+     * The request queue this request is associated with.
+     */
     private RequestQueue mRequestQueue;
-
-    /** Whether or not responses to this request should be cached. */
+    /**
+     * Whether or not responses to this request should be cached.
+     */
     // TODO(#190): Turn this off by default for anything other than GET requests.
     private boolean mShouldCache = true;
-
-    /** Whether or not this request has been canceled. */
+    /**
+     * Whether or not this request has been canceled.
+     */
     @GuardedBy("mLock")
     private boolean mCanceled = false;
-
-    /** Whether or not a response has been delivered for this request yet. */
+    /**
+     * Whether or not a response has been delivered for this request yet.
+     */
     @GuardedBy("mLock")
     private boolean mResponseDelivered = false;
-
-    /** Whether the request should be retried in the event of an HTTP 5xx (server) error. */
+    /**
+     * Whether the request should be retried in the event of an HTTP 5xx (server) error.
+     */
     private boolean mShouldRetryServerErrors = false;
-
-    /** Whether the request should be retried in the event of a {@link NoConnectionError}. */
+    /**
+     * Whether the request should be retried in the event of a {@link NoConnectionError}.
+     */
     private boolean mShouldRetryConnectionErrors = false;
-
-    /** The retry policy for this request. */
+    /**
+     * The retry policy for this request.
+     */
     private RetryPolicy mRetryPolicy;
-
     /**
      * When a request can be retrieved from cache but must be refreshed from the network, the cache
      * entry will be stored here so that in the event of a "Not Modified" response, we can be sure
      * it hasn't been evicted from cache.
      */
-    @Nullable private Cache.Entry mCacheEntry = null;
-
-    /** An opaque token tagging this request; used for bulk cancellation. */
+    @Nullable
+    private Cache.Entry mCacheEntry = null;
+    /**
+     * An opaque token tagging this request; used for bulk cancellation.
+     */
     private Object mTag;
-
-    /** Listener that will be notified when a response has been delivered. */
+    /**
+     * Listener that will be notified when a response has been delivered.
+     */
     @GuardedBy("mLock")
     private NetworkRequestCompleteListener mRequestCompleteListener;
 
@@ -135,7 +132,8 @@ public abstract class Request<T> implements Comparable<Request<T>> {
      * @deprecated Use {@link #Request(int, String, Response.ErrorListener)}.
      */
     @Deprecated
-    public Request(String url, Response.ErrorListener listener) {
+    public Request(String url, Response.ErrorListener listener)
+    {
         this(Method.DEPRECATED_GET_OR_POST, url, listener);
     }
 
@@ -145,7 +143,8 @@ public abstract class Request<T> implements Comparable<Request<T>> {
      * responses is provided by subclasses, who have a better idea of how to deliver an
      * already-parsed response.
      */
-    public Request(int method, String url, @Nullable Response.ErrorListener listener) {
+    public Request(int method, String url, @Nullable Response.ErrorListener listener)
+    {
         mMethod = method;
         mUrl = url;
         mErrorListener = listener;
@@ -154,51 +153,19 @@ public abstract class Request<T> implements Comparable<Request<T>> {
         mDefaultTrafficStatsTag = findDefaultTrafficStatsTag(url);
     }
 
-    /** Return the method for this request. Can be one of the values in {@link Method}. */
-    public int getMethod() {
-        return mMethod;
-    }
-
     /**
-     * Set a tag on this request. Can be used to cancel all requests with this tag by {@link
-     * RequestQueue#cancelAll(Object)}.
-     *
-     * @return This Request object to allow for chaining.
+     * @return The hashcode of the URL's host component, or 0 if there is none.
      */
-    public Request<?> setTag(Object tag) {
-        mTag = tag;
-        return this;
-    }
-
-    /**
-     * Returns this request's tag.
-     *
-     * @see Request#setTag(Object)
-     */
-    public Object getTag() {
-        return mTag;
-    }
-
-    /** @return this request's {@link Response.ErrorListener}. */
-    @Nullable
-    public Response.ErrorListener getErrorListener() {
-        synchronized (mLock) {
-            return mErrorListener;
-        }
-    }
-
-    /** @return A tag for use with {@link TrafficStats#setThreadStatsTag(int)} */
-    public int getTrafficStatsTag() {
-        return mDefaultTrafficStatsTag;
-    }
-
-    /** @return The hashcode of the URL's host component, or 0 if there is none. */
-    private static int findDefaultTrafficStatsTag(String url) {
-        if (!TextUtils.isEmpty(url)) {
+    private static int findDefaultTrafficStatsTag(String url)
+    {
+        if (!TextUtils.isEmpty(url))
+        {
             Uri uri = Uri.parse(url);
-            if (uri != null) {
+            if (uri != null)
+            {
                 String host = uri.getHost();
-                if (host != null) {
+                if (host != null)
+                {
                     return host.hashCode();
                 }
             }
@@ -207,18 +174,62 @@ public abstract class Request<T> implements Comparable<Request<T>> {
     }
 
     /**
-     * Sets the retry policy for this request.
+     * Return the method for this request. Can be one of the values in {@link Method}.
+     */
+    public int getMethod()
+    {
+        return mMethod;
+    }
+
+    /**
+     * Returns this request's tag.
+     *
+     * @see Request#setTag(Object)
+     */
+    public Object getTag()
+    {
+        return mTag;
+    }
+
+    /**
+     * Set a tag on this request. Can be used to cancel all requests with this tag by {@link
+     * RequestQueue#cancelAll(Object)}.
      *
      * @return This Request object to allow for chaining.
      */
-    public Request<?> setRetryPolicy(RetryPolicy retryPolicy) {
-        mRetryPolicy = retryPolicy;
+    public Request<?> setTag(Object tag)
+    {
+        mTag = tag;
         return this;
     }
 
-    /** Adds an event to this request's event log; for debugging. */
-    public void addMarker(String tag) {
-        if (MarkerLog.ENABLED) {
+    /**
+     * @return this request's {@link Response.ErrorListener}.
+     */
+    @Nullable
+    public Response.ErrorListener getErrorListener()
+    {
+        synchronized (mLock)
+        {
+            return mErrorListener;
+        }
+    }
+
+    /**
+     * @return A tag for use with {@link TrafficStats#setThreadStatsTag(int)}
+     */
+    public int getTrafficStatsTag()
+    {
+        return mDefaultTrafficStatsTag;
+    }
+
+    /**
+     * Adds an event to this request's event log; for debugging.
+     */
+    public void addMarker(String tag)
+    {
+        if (MarkerLog.ENABLED)
+        {
             mEventLog.add(tag, Thread.currentThread().getId());
         }
     }
@@ -228,20 +239,26 @@ public abstract class Request<T> implements Comparable<Request<T>> {
      *
      * <p>Also dumps all events from this request's event log; for debugging.
      */
-    void finish(final String tag) {
-        if (mRequestQueue != null) {
+    void finish(final String tag)
+    {
+        if (mRequestQueue != null)
+        {
             mRequestQueue.finish(this);
         }
-        if (MarkerLog.ENABLED) {
+        if (MarkerLog.ENABLED)
+        {
             final long threadId = Thread.currentThread().getId();
-            if (Looper.myLooper() != Looper.getMainLooper()) {
+            if (Looper.myLooper() != Looper.getMainLooper())
+            {
                 // If we finish marking off of the main thread, we need to
                 // actually do it on the main thread to ensure correct ordering.
                 Handler mainThread = new Handler(Looper.getMainLooper());
                 mainThread.post(
-                        new Runnable() {
+                        new Runnable()
+                        {
                             @Override
-                            public void run() {
+                            public void run()
+                            {
                                 mEventLog.add(tag, threadId);
                                 mEventLog.finish(Request.this.toString());
                             }
@@ -254,8 +271,10 @@ public abstract class Request<T> implements Comparable<Request<T>> {
         }
     }
 
-    void sendEvent(@RequestQueue.RequestEvent int event) {
-        if (mRequestQueue != null) {
+    void sendEvent(@RequestQueue.RequestEvent int event)
+    {
+        if (mRequestQueue != null)
+        {
             mRequestQueue.sendRequestEvent(this, event);
         }
     }
@@ -266,9 +285,22 @@ public abstract class Request<T> implements Comparable<Request<T>> {
      *
      * @return This Request object to allow for chaining.
      */
-    public Request<?> setRequestQueue(RequestQueue requestQueue) {
+    public Request<?> setRequestQueue(RequestQueue requestQueue)
+    {
         mRequestQueue = requestQueue;
         return this;
+    }
+
+    /**
+     * Returns the sequence number of this request.
+     */
+    public final int getSequence()
+    {
+        if (mSequence == null)
+        {
+            throw new IllegalStateException("getSequence called before setSequence");
+        }
+        return mSequence;
     }
 
     /**
@@ -276,26 +308,25 @@ public abstract class Request<T> implements Comparable<Request<T>> {
      *
      * @return This Request object to allow for chaining.
      */
-    public final Request<?> setSequence(int sequence) {
+    public final Request<?> setSequence(int sequence)
+    {
         mSequence = sequence;
         return this;
     }
 
-    /** Returns the sequence number of this request. */
-    public final int getSequence() {
-        if (mSequence == null) {
-            throw new IllegalStateException("getSequence called before setSequence");
-        }
-        return mSequence;
-    }
-
-    /** Returns the URL of this request. */
-    public String getUrl() {
+    /**
+     * Returns the URL of this request.
+     */
+    public String getUrl()
+    {
         return mUrl;
     }
 
-    /** Returns the cache key for this request. By default, this is the URL. */
-    public String getCacheKey() {
+    /**
+     * Returns the cache key for this request. By default, this is the URL.
+     */
+    public String getCacheKey()
+    {
         String url = getUrl();
         // If this is a GET request, just use the URL as the key.
         // For callers using DEPRECATED_GET_OR_POST, we assume the method is GET, which matches
@@ -304,10 +335,20 @@ public abstract class Request<T> implements Comparable<Request<T>> {
         // throw AuthFailureError.
         // TODO(#190): Remove support for non-GET methods.
         int method = getMethod();
-        if (method == Method.GET || method == Method.DEPRECATED_GET_OR_POST) {
+        if (method == Method.GET || method == Method.DEPRECATED_GET_OR_POST)
+        {
             return url;
         }
         return Integer.toString(method) + '-' + url;
+    }
+
+    /**
+     * Returns the annotated cache entry, or null if there isn't one.
+     */
+    @Nullable
+    public Cache.Entry getCacheEntry()
+    {
+        return mCacheEntry;
     }
 
     /**
@@ -316,15 +357,10 @@ public abstract class Request<T> implements Comparable<Request<T>> {
      *
      * @return This Request object to allow for chaining.
      */
-    public Request<?> setCacheEntry(Cache.Entry entry) {
+    public Request<?> setCacheEntry(Cache.Entry entry)
+    {
         mCacheEntry = entry;
         return this;
-    }
-
-    /** Returns the annotated cache entry, or null if there isn't one. */
-    @Nullable
-    public Cache.Entry getCacheEntry() {
-        return mCacheEntry;
     }
 
     /**
@@ -343,16 +379,22 @@ public abstract class Request<T> implements Comparable<Request<T>> {
      * <p>There are no guarantees if both of these conditions aren't met.
      */
     @CallSuper
-    public void cancel() {
-        synchronized (mLock) {
+    public void cancel()
+    {
+        synchronized (mLock)
+        {
             mCanceled = true;
             mErrorListener = null;
         }
     }
 
-    /** Returns true if this request has been canceled. */
-    public boolean isCanceled() {
-        synchronized (mLock) {
+    /**
+     * Returns true if this request has been canceled.
+     */
+    public boolean isCanceled()
+    {
+        synchronized (mLock)
+        {
             return mCanceled;
         }
     }
@@ -363,7 +405,8 @@ public abstract class Request<T> implements Comparable<Request<T>> {
      *
      * @throws AuthFailureError In the event of auth failure
      */
-    public Map<String, String> getHeaders() throws AuthFailureError {
+    public Map<String, String> getHeaders() throws AuthFailureError
+    {
         return Collections.emptyMap();
     }
 
@@ -379,7 +422,8 @@ public abstract class Request<T> implements Comparable<Request<T>> {
      */
     @Deprecated
     @Nullable
-    protected Map<String, String> getPostParams() throws AuthFailureError {
+    protected Map<String, String> getPostParams() throws AuthFailureError
+    {
         return getParams();
     }
 
@@ -399,13 +443,17 @@ public abstract class Request<T> implements Comparable<Request<T>> {
      * @deprecated Use {@link #getParamsEncoding()} instead.
      */
     @Deprecated
-    protected String getPostParamsEncoding() {
+    protected String getPostParamsEncoding()
+    {
         return getParamsEncoding();
     }
 
-    /** @deprecated Use {@link #getBodyContentType()} instead. */
+    /**
+     * @deprecated Use {@link #getBodyContentType()} instead.
+     */
     @Deprecated
-    public String getPostBodyContentType() {
+    public String getPostBodyContentType()
+    {
         return getBodyContentType();
     }
 
@@ -416,13 +464,15 @@ public abstract class Request<T> implements Comparable<Request<T>> {
      * @deprecated Use {@link #getBody()} instead.
      */
     @Deprecated
-    public byte[] getPostBody() throws AuthFailureError {
-        // Note: For compatibility with legacy clients of volley, this implementation must remain
+    public byte[] getPostBody() throws AuthFailureError
+    {
+        // Note: For compatibility with legacy clients of zstream, this implementation must remain
         // here instead of simply calling the getBody() function because this function must
         // call getPostParams() and getPostParamsEncoding() since legacy clients would have
         // overridden these two member functions for POST requests.
         Map<String, String> postParams = getPostParams();
-        if (postParams != null && postParams.size() > 0) {
+        if (postParams != null && postParams.size() > 0)
+        {
             return encodeParameters(postParams, getPostParamsEncoding());
         }
         return null;
@@ -437,7 +487,8 @@ public abstract class Request<T> implements Comparable<Request<T>> {
      * @throws AuthFailureError in the event of auth failure
      */
     @Nullable
-    protected Map<String, String> getParams() throws AuthFailureError {
+    protected Map<String, String> getParams() throws AuthFailureError
+    {
         return null;
     }
 
@@ -454,12 +505,16 @@ public abstract class Request<T> implements Comparable<Request<T>> {
      *       array.
      * </ol>
      */
-    protected String getParamsEncoding() {
+    protected String getParamsEncoding()
+    {
         return DEFAULT_PARAMS_ENCODING;
     }
 
-    /** Returns the content type of the POST or PUT body. */
-    public String getBodyContentType() {
+    /**
+     * Returns the content type of the POST or PUT body.
+     */
+    public String getBodyContentType()
+    {
         return "application/x-www-form-urlencoded; charset=" + getParamsEncoding();
     }
 
@@ -472,20 +527,28 @@ public abstract class Request<T> implements Comparable<Request<T>> {
      *
      * @throws AuthFailureError in the event of auth failure
      */
-    public byte[] getBody() throws AuthFailureError {
+    public byte[] getBody() throws AuthFailureError
+    {
         Map<String, String> params = getParams();
-        if (params != null && params.size() > 0) {
+        if (params != null && params.size() > 0)
+        {
             return encodeParameters(params, getParamsEncoding());
         }
         return null;
     }
 
-    /** Converts <code>params</code> into an application/x-www-form-urlencoded encoded string. */
-    private byte[] encodeParameters(Map<String, String> params, String paramsEncoding) {
+    /**
+     * Converts <code>params</code> into an application/x-www-form-urlencoded encoded string.
+     */
+    private byte[] encodeParameters(Map<String, String> params, String paramsEncoding)
+    {
         StringBuilder encodedParams = new StringBuilder();
-        try {
-            for (Map.Entry<String, String> entry : params.entrySet()) {
-                if (entry.getKey() == null || entry.getValue() == null) {
+        try
+        {
+            for (Map.Entry<String, String> entry : params.entrySet())
+            {
+                if (entry.getKey() == null || entry.getValue() == null)
+                {
                     throw new IllegalArgumentException(
                             String.format(
                                     "Request#getParams() or Request#getPostParams() returned a map "
@@ -499,7 +562,8 @@ public abstract class Request<T> implements Comparable<Request<T>> {
                 encodedParams.append('&');
             }
             return encodedParams.toString().getBytes(paramsEncoding);
-        } catch (UnsupportedEncodingException uee) {
+        } catch (UnsupportedEncodingException uee)
+        {
             throw new RuntimeException("Encoding not supported: " + paramsEncoding, uee);
         }
     }
@@ -509,13 +573,17 @@ public abstract class Request<T> implements Comparable<Request<T>> {
      *
      * @return This Request object to allow for chaining.
      */
-    public final Request<?> setShouldCache(boolean shouldCache) {
+    public final Request<?> setShouldCache(boolean shouldCache)
+    {
         mShouldCache = shouldCache;
         return this;
     }
 
-    /** Returns true if responses to this request should be cached. */
-    public final boolean shouldCache() {
+    /**
+     * Returns true if responses to this request should be cached.
+     */
+    public final boolean shouldCache()
+    {
         return mShouldCache;
     }
 
@@ -524,7 +592,8 @@ public abstract class Request<T> implements Comparable<Request<T>> {
      *
      * @return This Request object to allow for chaining.
      */
-    public final Request<?> setShouldRetryServerErrors(boolean shouldRetryServerErrors) {
+    public final Request<?> setShouldRetryServerErrors(boolean shouldRetryServerErrors)
+    {
         mShouldRetryServerErrors = shouldRetryServerErrors;
         return this;
     }
@@ -532,7 +601,8 @@ public abstract class Request<T> implements Comparable<Request<T>> {
     /**
      * Returns true if this request should be retried in the event of an HTTP 5xx (server) error.
      */
-    public final boolean shouldRetryServerErrors() {
+    public final boolean shouldRetryServerErrors()
+    {
         return mShouldRetryServerErrors;
     }
 
@@ -542,7 +612,8 @@ public abstract class Request<T> implements Comparable<Request<T>> {
      *
      * @return This Request object to allow for chaining.
      */
-    public final Request<?> setShouldRetryConnectionErrors(boolean shouldRetryConnectionErrors) {
+    public final Request<?> setShouldRetryConnectionErrors(boolean shouldRetryConnectionErrors)
+    {
         mShouldRetryConnectionErrors = shouldRetryConnectionErrors;
         return this;
     }
@@ -551,23 +622,16 @@ public abstract class Request<T> implements Comparable<Request<T>> {
      * Returns true if this request should be retried in the event that no connection could be
      * established.
      */
-    public final boolean shouldRetryConnectionErrors() {
+    public final boolean shouldRetryConnectionErrors()
+    {
         return mShouldRetryConnectionErrors;
     }
 
     /**
-     * Priority values. Requests will be processed from higher priorities to lower priorities, in
-     * FIFO order.
+     * Returns the {@link Priority} of this request; {@link Priority#NORMAL} by default.
      */
-    public enum Priority {
-        LOW,
-        NORMAL,
-        HIGH,
-        IMMEDIATE
-    }
-
-    /** Returns the {@link Priority} of this request; {@link Priority#NORMAL} by default. */
-    public Priority getPriority() {
+    public Priority getPriority()
+    {
         return Priority.NORMAL;
     }
 
@@ -576,28 +640,49 @@ public abstract class Request<T> implements Comparable<Request<T>> {
      * retry attempt if a backoff is specified via backoffTimeout()). If there are no retry attempts
      * remaining, this will cause delivery of a {@link TimeoutError} error.
      */
-    public final int getTimeoutMs() {
+    public final int getTimeoutMs()
+    {
         return getRetryPolicy().getCurrentTimeout();
     }
 
-    /** Returns the retry policy that should be used for this request. */
-    public RetryPolicy getRetryPolicy() {
+    /**
+     * Returns the retry policy that should be used for this request.
+     */
+    public RetryPolicy getRetryPolicy()
+    {
         return mRetryPolicy;
+    }
+
+    /**
+     * Sets the retry policy for this request.
+     *
+     * @return This Request object to allow for chaining.
+     */
+    public Request<?> setRetryPolicy(RetryPolicy retryPolicy)
+    {
+        mRetryPolicy = retryPolicy;
+        return this;
     }
 
     /**
      * Mark this request as having a response delivered on it. This can be used later in the
      * request's lifetime for suppressing identical responses.
      */
-    public void markDelivered() {
-        synchronized (mLock) {
+    public void markDelivered()
+    {
+        synchronized (mLock)
+        {
             mResponseDelivered = true;
         }
     }
 
-    /** Returns true if this request has had a response delivered for it. */
-    public boolean hasHadResponseDelivered() {
-        synchronized (mLock) {
+    /**
+     * Returns true if this request has had a response delivered for it.
+     */
+    public boolean hasHadResponseDelivered()
+    {
+        synchronized (mLock)
+        {
             return mResponseDelivered;
         }
     }
@@ -617,11 +702,12 @@ public abstract class Request<T> implements Comparable<Request<T>> {
      *
      * <p>The default implementation just returns the passed 'networkError'.
      *
-     * @param volleyError the error retrieved from the network
+     * @param zstreamError the error retrieved from the network
      * @return an NetworkError augmented with additional information
      */
-    protected VolleyError parseNetworkError(VolleyError volleyError) {
-        return volleyError;
+    protected ZStreamError parseNetworkError(ZStreamError zstreamError)
+    {
+        return zstreamError;
     }
 
     /**
@@ -630,7 +716,7 @@ public abstract class Request<T> implements Comparable<Request<T>> {
      * delivered.
      *
      * @param response The parsed response returned by {@link
-     *     #parseNetworkResponse(NetworkResponse)}
+     *                 #parseNetworkResponse(NetworkResponse)}
      */
     protected abstract void deliverResponse(T response);
 
@@ -639,12 +725,15 @@ public abstract class Request<T> implements Comparable<Request<T>> {
      *
      * @param error Error details
      */
-    public void deliverError(VolleyError error) {
+    public void deliverError(ZStreamError error)
+    {
         Response.ErrorListener listener;
-        synchronized (mLock) {
+        synchronized (mLock)
+        {
             listener = mErrorListener;
         }
-        if (listener != null) {
+        if (listener != null)
+        {
             listener.onErrorResponse(error);
         }
     }
@@ -654,8 +743,10 @@ public abstract class Request<T> implements Comparable<Request<T>> {
      * from the network.
      */
     /* package */ void setNetworkRequestCompleteListener(
-            NetworkRequestCompleteListener requestCompleteListener) {
-        synchronized (mLock) {
+            NetworkRequestCompleteListener requestCompleteListener)
+    {
+        synchronized (mLock)
+        {
             mRequestCompleteListener = requestCompleteListener;
         }
     }
@@ -666,12 +757,15 @@ public abstract class Request<T> implements Comparable<Request<T>> {
      *
      * @param response received from the network
      */
-    /* package */ void notifyListenerResponseReceived(Response<?> response) {
+    /* package */ void notifyListenerResponseReceived(Response<?> response)
+    {
         NetworkRequestCompleteListener listener;
-        synchronized (mLock) {
+        synchronized (mLock)
+        {
             listener = mRequestCompleteListener;
         }
-        if (listener != null) {
+        if (listener != null)
+        {
             listener.onResponseReceived(this, response);
         }
     }
@@ -680,12 +774,15 @@ public abstract class Request<T> implements Comparable<Request<T>> {
      * Notify NetworkRequestCompleteListener that the network request did not result in a response
      * which can be used for other, waiting requests.
      */
-    /* package */ void notifyListenerResponseNotUsable() {
+    /* package */ void notifyListenerResponseNotUsable()
+    {
         NetworkRequestCompleteListener listener;
-        synchronized (mLock) {
+        synchronized (mLock)
+        {
             listener = mRequestCompleteListener;
         }
-        if (listener != null) {
+        if (listener != null)
+        {
             listener.onNoUsableResponseReceived(this);
         }
     }
@@ -695,7 +792,8 @@ public abstract class Request<T> implements Comparable<Request<T>> {
      * FIFO ordering.
      */
     @Override
-    public int compareTo(Request<T> other) {
+    public int compareTo(Request<T> other)
+    {
         Priority left = this.getPriority();
         Priority right = other.getPriority();
 
@@ -705,7 +803,8 @@ public abstract class Request<T> implements Comparable<Request<T>> {
     }
 
     @Override
-    public String toString() {
+    public String toString()
+    {
         String trafficStatsTag = "0x" + Integer.toHexString(getTrafficStatsTag());
         return (isCanceled() ? "[X] " : "[ ] ")
                 + getUrl()
@@ -715,5 +814,50 @@ public abstract class Request<T> implements Comparable<Request<T>> {
                 + getPriority()
                 + " "
                 + mSequence;
+    }
+
+    /**
+     * Priority values. Requests will be processed from higher priorities to lower priorities, in
+     * FIFO order.
+     */
+    public enum Priority
+    {
+        LOW,
+        NORMAL,
+        HIGH,
+        IMMEDIATE
+    }
+
+    /**
+     * Supported request methods.
+     */
+    public interface Method
+    {
+        int DEPRECATED_GET_OR_POST = -1;
+        int GET = 0;
+        int POST = 1;
+        int PUT = 2;
+        int DELETE = 3;
+        int HEAD = 4;
+        int OPTIONS = 5;
+        int TRACE = 6;
+        int PATCH = 7;
+    }
+
+    /**
+     * Callback to notify when the network request returns.
+     */
+    /* package */ interface NetworkRequestCompleteListener
+    {
+
+        /**
+         * Callback when a network response has been received.
+         */
+        void onResponseReceived(Request<?> request, Response<?> response);
+
+        /**
+         * Callback when request returns from network without valid response.
+         */
+        void onNoUsableResponseReceived(Request<?> request);
     }
 }

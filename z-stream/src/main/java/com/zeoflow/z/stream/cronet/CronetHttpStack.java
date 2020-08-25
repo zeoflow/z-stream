@@ -17,8 +17,10 @@
 package com.zeoflow.z.stream.cronet;
 
 import android.content.Context;
+
 import androidx.annotation.Nullable;
 import androidx.annotation.VisibleForTesting;
+
 import com.zeoflow.z.stream.AuthFailureError;
 import com.zeoflow.z.stream.Header;
 import com.zeoflow.z.stream.Request;
@@ -28,14 +30,7 @@ import com.zeoflow.z.stream.toolbox.ByteArrayPool;
 import com.zeoflow.z.stream.toolbox.HttpResponse;
 import com.zeoflow.z.stream.toolbox.PoolingByteArrayOutputStream;
 import com.zeoflow.z.stream.toolbox.UrlRewriter;
-import java.io.IOException;
-import java.nio.ByteBuffer;
-import java.nio.channels.Channels;
-import java.nio.channels.WritableByteChannel;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+
 import org.chromium.net.CronetEngine;
 import org.chromium.net.CronetException;
 import org.chromium.net.UploadDataProvider;
@@ -44,32 +39,57 @@ import org.chromium.net.UrlRequest;
 import org.chromium.net.UrlRequest.Callback;
 import org.chromium.net.UrlResponseInfo;
 
+import java.io.IOException;
+import java.nio.ByteBuffer;
+import java.nio.channels.Channels;
+import java.nio.channels.WritableByteChannel;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+
 /**
  * A {@link AsyncHttpStack} that's based on Cronet's fully asynchronous API for network requests.
  */
-public class CronetHttpStack extends AsyncHttpStack {
+public class CronetHttpStack extends AsyncHttpStack
+{
 
     private final CronetEngine mCronetEngine;
     private final ByteArrayPool mPool;
     private final UrlRewriter mUrlRewriter;
 
     private CronetHttpStack(
-            CronetEngine cronetEngine, ByteArrayPool pool, UrlRewriter urlRewriter) {
+            CronetEngine cronetEngine, ByteArrayPool pool, UrlRewriter urlRewriter)
+    {
         mCronetEngine = cronetEngine;
         mPool = pool;
         mUrlRewriter = urlRewriter;
+    }
+
+    @VisibleForTesting
+    public static List<Header> getHeaders(List<Map.Entry<String, String>> headersList)
+    {
+        List<Header> headers = new ArrayList<>();
+        for (Map.Entry<String, String> header : headersList)
+        {
+            headers.add(new Header(header.getKey(), header.getValue()));
+        }
+        return headers;
     }
 
     @Override
     public void executeRequest(
             final Request<?> request,
             final Map<String, String> additionalHeaders,
-            final OnRequestComplete callback) {
-        if (getBlockingExecutor() == null || getNonBlockingExecutor() == null) {
+            final OnRequestComplete callback)
+    {
+        if (getBlockingExecutor() == null || getNonBlockingExecutor() == null)
+        {
             throw new IllegalStateException("Must set blocking and non-blocking executors");
         }
         final Callback urlCallback =
-                new Callback() {
+                new Callback()
+                {
                     PoolingByteArrayOutputStream bytesReceived = null;
                     WritableByteChannel receiveChannel = null;
 
@@ -77,13 +97,15 @@ public class CronetHttpStack extends AsyncHttpStack {
                     public void onRedirectReceived(
                             UrlRequest urlRequest,
                             UrlResponseInfo urlResponseInfo,
-                            String newLocationUrl) {
+                            String newLocationUrl)
+                    {
                         urlRequest.followRedirect();
                     }
 
                     @Override
                     public void onResponseStarted(
-                            UrlRequest urlRequest, UrlResponseInfo urlResponseInfo) {
+                            UrlRequest urlRequest, UrlResponseInfo urlResponseInfo)
+                    {
                         bytesReceived =
                                 new PoolingByteArrayOutputStream(
                                         mPool, getContentLength(urlResponseInfo));
@@ -95,13 +117,16 @@ public class CronetHttpStack extends AsyncHttpStack {
                     public void onReadCompleted(
                             UrlRequest urlRequest,
                             UrlResponseInfo urlResponseInfo,
-                            ByteBuffer byteBuffer) {
+                            ByteBuffer byteBuffer)
+                    {
                         byteBuffer.flip();
-                        try {
+                        try
+                        {
                             receiveChannel.write(byteBuffer);
                             byteBuffer.clear();
                             urlRequest.read(byteBuffer);
-                        } catch (IOException e) {
+                        } catch (IOException e)
+                        {
                             urlRequest.cancel();
                             callback.onError(e);
                         }
@@ -109,7 +134,8 @@ public class CronetHttpStack extends AsyncHttpStack {
 
                     @Override
                     public void onSucceeded(
-                            UrlRequest urlRequest, UrlResponseInfo urlResponseInfo) {
+                            UrlRequest urlRequest, UrlResponseInfo urlResponseInfo)
+                    {
                         List<Header> headers = getHeaders(urlResponseInfo.getAllHeadersAsList());
                         HttpResponse response =
                                 new HttpResponse(
@@ -123,14 +149,16 @@ public class CronetHttpStack extends AsyncHttpStack {
                     public void onFailed(
                             UrlRequest urlRequest,
                             UrlResponseInfo urlResponseInfo,
-                            CronetException e) {
+                            CronetException e)
+                    {
                         callback.onError(e);
                     }
                 };
 
         String url = request.getUrl();
         String rewritten = mUrlRewriter.rewriteUrl(url);
-        if (rewritten == null) {
+        if (rewritten == null)
+        {
             callback.onError(new IOException("URL blocked by rewriter: " + url));
             return;
         }
@@ -149,59 +177,25 @@ public class CronetHttpStack extends AsyncHttpStack {
                 .execute(new SetUpRequestTask<>(request, builder, additionalHeaders, callback));
     }
 
-    private class SetUpRequestTask<T> extends RequestTask<T> {
-        UrlRequest.Builder builder;
-        Map<String, String> additionalHeaders;
-        OnRequestComplete callback;
-        Request<T> request;
-
-        SetUpRequestTask(
-                Request<T> request,
-                UrlRequest.Builder builder,
-                Map<String, String> additionalHeaders,
-                OnRequestComplete callback) {
-            super(request);
-            this.builder = builder;
-            this.additionalHeaders = additionalHeaders;
-            this.callback = callback;
-            this.request = request;
-        }
-
-        @Override
-        public void run() {
-            try {
-                setHttpMethod(request, builder);
-                setRequestHeaders(request, additionalHeaders, builder);
-                UrlRequest urlRequest = builder.build();
-                urlRequest.start();
-            } catch (AuthFailureError authFailureError) {
-                callback.onAuthError(authFailureError);
-            }
-        }
-    }
-
-    @VisibleForTesting
-    public static List<Header> getHeaders(List<Map.Entry<String, String>> headersList) {
-        List<Header> headers = new ArrayList<>();
-        for (Map.Entry<String, String> header : headersList) {
-            headers.add(new Header(header.getKey(), header.getValue()));
-        }
-        return headers;
-    }
-
-    /** Sets the connection parameters for the UrlRequest */
+    /**
+     * Sets the connection parameters for the UrlRequest
+     */
     private void setHttpMethod(Request<?> request, UrlRequest.Builder builder)
-            throws AuthFailureError {
-        switch (request.getMethod()) {
+            throws AuthFailureError
+    {
+        switch (request.getMethod())
+        {
             case Request.Method.DEPRECATED_GET_OR_POST:
                 // This is the deprecated way that needs to be handled for backwards compatibility.
                 // If the request's post body is null, then the assumption is that the request is
                 // GET.  Otherwise, it is assumed that the request is a POST.
                 byte[] postBody = request.getPostBody();
-                if (postBody != null) {
+                if (postBody != null)
+                {
                     builder.setHttpMethod("POST");
                     addBodyIfExists(postBody, builder);
-                } else {
+                } else
+                {
                     builder.setHttpMethod("GET");
                 }
                 break;
@@ -242,34 +236,44 @@ public class CronetHttpStack extends AsyncHttpStack {
     /**
      * Sets the request headers for the UrlRequest.
      *
-     * @param request to get the headers from
+     * @param request           to get the headers from
      * @param additionalHeaders for the UrlRequest
-     * @param builder that we are adding the request headers to
+     * @param builder           that we are adding the request headers to
      * @throws AuthFailureError is thrown if Request#getHeaders throws ones
      */
     private void setRequestHeaders(
             Request<?> request, Map<String, String> additionalHeaders, UrlRequest.Builder builder)
-            throws AuthFailureError {
+            throws AuthFailureError
+    {
         HashMap<String, String> map = new HashMap<>();
         map.putAll(additionalHeaders);
         // Request.getHeaders() takes precedence over the given additional (cache) headers).
         map.putAll(request.getHeaders());
-        for (Map.Entry<String, String> header : map.entrySet()) {
+        for (Map.Entry<String, String> header : map.entrySet())
+        {
             builder.addHeader(header.getKey(), header.getValue());
         }
     }
 
-    /** Sets the UploadDataProvider of the UrlRequest.Builder */
-    private void addBodyIfExists(@Nullable byte[] body, UrlRequest.Builder builder) {
-        if (body != null) {
+    /**
+     * Sets the UploadDataProvider of the UrlRequest.Builder
+     */
+    private void addBodyIfExists(@Nullable byte[] body, UrlRequest.Builder builder)
+    {
+        if (body != null)
+        {
             UploadDataProvider dataProvider = UploadDataProviders.create(body);
             builder.setUploadDataProvider(dataProvider, getNonBlockingExecutor());
         }
     }
 
-    /** Helper method that maps Volley's request priority to Cronet's */
-    private int getPriority(Request<?> request) {
-        switch (request.getPriority()) {
+    /**
+     * Helper method that maps ZStream's request priority to Cronet's
+     */
+    private int getPriority(Request<?> request)
+    {
+        switch (request.getPriority())
+        {
             case LOW:
                 return UrlRequest.Builder.REQUEST_PRIORITY_LOW;
             case HIGH:
@@ -281,11 +285,14 @@ public class CronetHttpStack extends AsyncHttpStack {
         }
     }
 
-    private int getContentLength(UrlResponseInfo urlResponseInfo) {
+    private int getContentLength(UrlResponseInfo urlResponseInfo)
+    {
         List<String> content = urlResponseInfo.getAllHeaders().get("Content-Length");
-        if (content == null) {
+        if (content == null)
+        {
             return 1024;
-        } else {
+        } else
+        {
             return Integer.parseInt(content.get(0));
         }
     }
@@ -294,55 +301,108 @@ public class CronetHttpStack extends AsyncHttpStack {
      * Builder is used to build an instance of {@link CronetHttpStack} from values configured by the
      * setters.
      */
-    public static class Builder {
+    public static class Builder
+    {
         private static final int DEFAULT_POOL_SIZE = 4096;
-        private CronetEngine mCronetEngine;
         private final Context context;
+        private CronetEngine mCronetEngine;
         private ByteArrayPool mPool;
         private UrlRewriter mUrlRewriter;
 
-        public Builder(Context context) {
+        public Builder(Context context)
+        {
             this.context = context;
             mCronetEngine = null;
             mPool = null;
             mUrlRewriter = null;
         }
 
-        /** Sets the CronetEngine to be used. Defaults to a vanialla CronetEngine. */
-        public Builder setCronetEngine(CronetEngine engine) {
+        /**
+         * Sets the CronetEngine to be used. Defaults to a vanialla CronetEngine.
+         */
+        public Builder setCronetEngine(CronetEngine engine)
+        {
             mCronetEngine = engine;
             return this;
         }
 
-        /** Sets the ByteArrayPool to be used. Defaults to a new pool with 4096 bytes. */
-        public Builder setPool(ByteArrayPool pool) {
+        /**
+         * Sets the ByteArrayPool to be used. Defaults to a new pool with 4096 bytes.
+         */
+        public Builder setPool(ByteArrayPool pool)
+        {
             mPool = pool;
             return this;
         }
 
-        /** Sets the UrlRewriter to be used. Default is to return the original string. */
-        public Builder setUrlRewriter(UrlRewriter urlRewriter) {
+        /**
+         * Sets the UrlRewriter to be used. Default is to return the original string.
+         */
+        public Builder setUrlRewriter(UrlRewriter urlRewriter)
+        {
             mUrlRewriter = urlRewriter;
             return this;
         }
 
-        public CronetHttpStack build() {
-            if (mCronetEngine == null) {
+        public CronetHttpStack build()
+        {
+            if (mCronetEngine == null)
+            {
                 mCronetEngine = new CronetEngine.Builder(context).build();
             }
-            if (mUrlRewriter == null) {
+            if (mUrlRewriter == null)
+            {
                 mUrlRewriter =
-                        new UrlRewriter() {
+                        new UrlRewriter()
+                        {
                             @Override
-                            public String rewriteUrl(String originalUrl) {
+                            public String rewriteUrl(String originalUrl)
+                            {
                                 return originalUrl;
                             }
                         };
             }
-            if (mPool == null) {
+            if (mPool == null)
+            {
                 mPool = new ByteArrayPool(DEFAULT_POOL_SIZE);
             }
             return new CronetHttpStack(mCronetEngine, mPool, mUrlRewriter);
+        }
+    }
+
+    private class SetUpRequestTask<T> extends RequestTask<T>
+    {
+        UrlRequest.Builder builder;
+        Map<String, String> additionalHeaders;
+        OnRequestComplete callback;
+        Request<T> request;
+
+        SetUpRequestTask(
+                Request<T> request,
+                UrlRequest.Builder builder,
+                Map<String, String> additionalHeaders,
+                OnRequestComplete callback)
+        {
+            super(request);
+            this.builder = builder;
+            this.additionalHeaders = additionalHeaders;
+            this.callback = callback;
+            this.request = request;
+        }
+
+        @Override
+        public void run()
+        {
+            try
+            {
+                setHttpMethod(request, builder);
+                setRequestHeaders(request, additionalHeaders, builder);
+                UrlRequest urlRequest = builder.build();
+                urlRequest.start();
+            } catch (AuthFailureError authFailureError)
+            {
+                callback.onAuthError(authFailureError);
+            }
         }
     }
 }

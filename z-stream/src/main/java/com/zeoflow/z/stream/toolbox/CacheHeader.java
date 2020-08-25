@@ -1,9 +1,11 @@
 package com.zeoflow.z.stream.toolbox;
 
 import androidx.annotation.Nullable;
+
 import com.zeoflow.z.stream.Cache;
 import com.zeoflow.z.stream.Header;
-import com.zeoflow.z.stream.VolleyLog;
+import com.zeoflow.z.stream.ZStreamLog;
+
 import java.io.IOException;
 import java.io.OutputStream;
 import java.nio.BufferUnderflowException;
@@ -11,14 +13,49 @@ import java.nio.ByteBuffer;
 import java.util.Collections;
 import java.util.List;
 
-/** Handles holding onto the cache headers for an entry. */
-class CacheHeader {
-    /** Magic number for current version of cache file format. */
+/**
+ * Handles holding onto the cache headers for an entry.
+ */
+class CacheHeader
+{
+    /**
+     * Magic number for current version of cache file format.
+     */
     private static final int CACHE_MAGIC = 0x20150306;
 
-    /** Bits required to write 6 longs and 1 int. */
+    /**
+     * Bits required to write 6 longs and 1 int.
+     */
     private static final int HEADER_SIZE = 52;
-
+    /**
+     * The key that identifies the cache entry.
+     */
+    final String key;
+    /**
+     * ETag for cache coherence.
+     */
+    @Nullable
+    final String etag;
+    /**
+     * Date of this response as reported by the server.
+     */
+    final long serverDate;
+    /**
+     * The last modified date for the requested object.
+     */
+    final long lastModified;
+    /**
+     * TTL for this record.
+     */
+    final long ttl;
+    /**
+     * Soft TTL for this record.
+     */
+    final long softTtl;
+    /**
+     * Headers from the response resulting in this cache entry.
+     */
+    final List<Header> allResponseHeaders;
     /**
      * The size of the data identified by this CacheHeader on disk (both header and data).
      *
@@ -28,27 +65,6 @@ class CacheHeader {
      */
     long size;
 
-    /** The key that identifies the cache entry. */
-    final String key;
-
-    /** ETag for cache coherence. */
-    @Nullable final String etag;
-
-    /** Date of this response as reported by the server. */
-    final long serverDate;
-
-    /** The last modified date for the requested object. */
-    final long lastModified;
-
-    /** TTL for this record. */
-    final long ttl;
-
-    /** Soft TTL for this record. */
-    final long softTtl;
-
-    /** Headers from the response resulting in this cache entry. */
-    final List<Header> allResponseHeaders;
-
     private CacheHeader(
             String key,
             String etag,
@@ -56,7 +72,8 @@ class CacheHeader {
             long lastModified,
             long ttl,
             long softTtl,
-            List<Header> allResponseHeaders) {
+            List<Header> allResponseHeaders)
+    {
         this.key = key;
         this.etag = "".equals(etag) ? null : etag;
         this.serverDate = serverDate;
@@ -69,10 +86,11 @@ class CacheHeader {
     /**
      * Instantiates a new CacheHeader object.
      *
-     * @param key The key that identifies the cache entry
+     * @param key   The key that identifies the cache entry
      * @param entry The cache entry.
      */
-    CacheHeader(String key, Cache.Entry entry) {
+    CacheHeader(String key, Cache.Entry entry)
+    {
         this(
                 key,
                 entry.etag,
@@ -83,9 +101,11 @@ class CacheHeader {
                 getAllResponseHeaders(entry));
     }
 
-    private static List<Header> getAllResponseHeaders(Cache.Entry entry) {
+    private static List<Header> getAllResponseHeaders(Cache.Entry entry)
+    {
         // If the entry contains all the response headers, use that field directly.
-        if (entry.allResponseHeaders != null) {
+        if (entry.allResponseHeaders != null)
+        {
             return entry.allResponseHeaders;
         }
 
@@ -99,9 +119,11 @@ class CacheHeader {
      * @param is The InputStream to read from.
      * @throws IOException if fails to read header
      */
-    static CacheHeader readHeader(DiskBasedCache.CountingInputStream is) throws IOException {
+    static CacheHeader readHeader(DiskBasedCache.CountingInputStream is) throws IOException
+    {
         int magic = DiskBasedCacheUtility.readInt(is);
-        if (magic != CACHE_MAGIC) {
+        if (magic != CACHE_MAGIC)
+        {
             // don't bother deleting, it'll get pruned eventually
             throw new IOException();
         }
@@ -123,10 +145,13 @@ class CacheHeader {
      * @throws IOException if fails to read header
      */
     @Nullable
-    static CacheHeader readHeader(final ByteBuffer buffer) {
-        try {
+    static CacheHeader readHeader(final ByteBuffer buffer)
+    {
+        try
+        {
             int magic = buffer.getInt();
-            if (magic != CACHE_MAGIC) {
+            if (magic != CACHE_MAGIC)
+            {
                 return null;
             }
             String key = DiskBasedCacheUtility.readString(buffer);
@@ -138,17 +163,22 @@ class CacheHeader {
             List<Header> allResponseHeaders = DiskBasedCacheUtility.readHeaderList(buffer);
             return new CacheHeader(
                     key, etag, serverDate, lastModified, ttl, softTtl, allResponseHeaders);
-        } catch (IOException e) {
-            VolleyLog.e(e, "Failed to read CacheHeader");
+        } catch (IOException e)
+        {
+            ZStreamLog.e(e, "Failed to read CacheHeader");
             return null;
-        } catch (BufferUnderflowException e) {
-            VolleyLog.e(e, "Ran out of room while reading from the buffer");
+        } catch (BufferUnderflowException e)
+        {
+            ZStreamLog.e(e, "Ran out of room while reading from the buffer");
             return null;
         }
     }
 
-    /** Creates a cache entry for the specified data. */
-    Cache.Entry toCacheEntry(byte[] data) {
+    /**
+     * Creates a cache entry for the specified data.
+     */
+    Cache.Entry toCacheEntry(byte[] data)
+    {
         Cache.Entry e = new Cache.Entry();
         e.data = data;
         e.etag = etag;
@@ -161,9 +191,13 @@ class CacheHeader {
         return e;
     }
 
-    /** Writes the contents of this CacheHeader to the specified OutputStream. */
-    boolean writeHeader(OutputStream os) {
-        try {
+    /**
+     * Writes the contents of this CacheHeader to the specified OutputStream.
+     */
+    boolean writeHeader(OutputStream os)
+    {
+        try
+        {
             DiskBasedCacheUtility.writeInt(os, CACHE_MAGIC);
             DiskBasedCacheUtility.writeString(os, key);
             DiskBasedCacheUtility.writeString(os, etag == null ? "" : etag);
@@ -174,14 +208,18 @@ class CacheHeader {
             DiskBasedCacheUtility.writeHeaderList(allResponseHeaders, os);
             os.flush();
             return true;
-        } catch (IOException e) {
-            VolleyLog.d("%s", e.toString());
+        } catch (IOException e)
+        {
+            ZStreamLog.d("%s", e.toString());
             return false;
         }
     }
 
-    /** Writes the contents of this CacheHeader to the specified ByteBuffer. */
-    void writeHeader(ByteBuffer buffer) throws IOException {
+    /**
+     * Writes the contents of this CacheHeader to the specified ByteBuffer.
+     */
+    void writeHeader(ByteBuffer buffer) throws IOException
+    {
         buffer.putInt(CACHE_MAGIC);
         DiskBasedCacheUtility.writeString(buffer, key);
         DiskBasedCacheUtility.writeString(buffer, etag);
@@ -192,11 +230,15 @@ class CacheHeader {
         DiskBasedCacheUtility.writeHeaderList(allResponseHeaders, buffer);
     }
 
-    /** Gets the size of the header in bytes. */
-    int getHeaderSize() throws IOException {
+    /**
+     * Gets the size of the header in bytes.
+     */
+    int getHeaderSize() throws IOException
+    {
         int size = 0;
         size += key.getBytes("UTF-8").length;
-        if (etag != null) {
+        if (etag != null)
+        {
             size += etag.getBytes("UTF-8").length;
         }
         size += DiskBasedCacheUtility.headerListSize(allResponseHeaders);

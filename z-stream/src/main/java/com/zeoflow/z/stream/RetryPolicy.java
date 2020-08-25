@@ -23,7 +23,7 @@ package com.zeoflow.z.stream;
  *
  * <ul>
  *   <li>The number of tries. This can be a simple counter or more complex logic based on the type
- *       of error passed to {@link #retry(VolleyError)}, although {@link #getCurrentRetryCount()}
+ *       of error passed to {@link #retry(ZStreamError)}, although {@link #getCurrentRetryCount()}
  *       should always return the current retry count for logging purposes.
  *   <li>The request timeout for each try, via {@link #getCurrentTimeout()}. In the common case that
  *       a request times out before the response has been received from the server, retrying again
@@ -35,22 +35,27 @@ package com.zeoflow.z.stream;
  * with no delay between them (although the time between tries may increase if the requests are
  * timing out and {@link #getCurrentTimeout()} is returning increasing values).
  *
- * <p>By default, Volley uses {@link DefaultRetryPolicy}.
+ * <p>By default, ZStream uses {@link DefaultRetryPolicy}.
  */
-public interface RetryPolicy {
+public interface RetryPolicy
+{
 
-    /** Returns the current timeout (used for logging). */
+    /**
+     * Returns the current timeout (used for logging).
+     */
     int getCurrentTimeout();
 
-    /** Returns the current retry count (used for logging). */
+    /**
+     * Returns the current retry count (used for logging).
+     */
     int getCurrentRetryCount();
 
     /**
      * Prepares for the next retry by applying a backoff to the timeout.
      *
      * @param error The error code of the last attempt.
-     * @throws VolleyError In the event that the retry could not be performed (for example if we ran
-     *     out of attempts), the passed in error is thrown.
+     * @throws ZStreamError In the event that the retry could not be performed (for example if we ran
+     *                      out of attempts), the passed in error is thrown.
      */
-    void retry(VolleyError error) throws VolleyError;
+    void retry(ZStreamError error) throws ZStreamError;
 }

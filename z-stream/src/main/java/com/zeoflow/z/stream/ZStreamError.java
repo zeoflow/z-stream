@@ -16,40 +16,50 @@
 
 package com.zeoflow.z.stream;
 
-/** Exception style class encapsulating Volley errors */
+/**
+ * Exception style class encapsulating ZStream errors
+ */
 @SuppressWarnings("serial")
-public class VolleyError extends Exception {
+public class ZStreamError extends Exception
+{
     public final NetworkResponse networkResponse;
     private long networkTimeMs;
 
-    public VolleyError() {
+    public ZStreamError()
+    {
         networkResponse = null;
     }
 
-    public VolleyError(NetworkResponse response) {
+    public ZStreamError(NetworkResponse response)
+    {
         networkResponse = response;
     }
 
-    public VolleyError(String exceptionMessage) {
+    public ZStreamError(String exceptionMessage)
+    {
         super(exceptionMessage);
         networkResponse = null;
     }
 
-    public VolleyError(String exceptionMessage, Throwable reason) {
+    public ZStreamError(String exceptionMessage, Throwable reason)
+    {
         super(exceptionMessage, reason);
         networkResponse = null;
     }
 
-    public VolleyError(Throwable cause) {
+    public ZStreamError(Throwable cause)
+    {
         super(cause);
         networkResponse = null;
     }
 
-    /* package */ void setNetworkTimeMs(long networkTimeMs) {
-        this.networkTimeMs = networkTimeMs;
+    public long getNetworkTimeMs()
+    {
+        return networkTimeMs;
     }
 
-    public long getNetworkTimeMs() {
-        return networkTimeMs;
+    /* package */ void setNetworkTimeMs(long networkTimeMs)
+    {
+        this.networkTimeMs = networkTimeMs;
     }
 }

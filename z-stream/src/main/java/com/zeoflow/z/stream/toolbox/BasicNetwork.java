@@ -17,11 +17,13 @@
 package com.zeoflow.z.stream.toolbox;
 
 import android.os.SystemClock;
+
 import com.zeoflow.z.stream.Header;
 import com.zeoflow.z.stream.Network;
 import com.zeoflow.z.stream.NetworkResponse;
 import com.zeoflow.z.stream.Request;
-import com.zeoflow.z.stream.VolleyError;
+import com.zeoflow.z.stream.ZStreamError;
+
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.HttpURLConnection;
@@ -30,27 +32,30 @@ import java.util.List;
 import java.util.Map;
 import java.util.TreeMap;
 
-/** A network performing Volley requests over an {@link HttpStack}. */
-public class BasicNetwork implements Network {
+/**
+ * A network performing ZStream requests over an {@link HttpStack}.
+ */
+public class BasicNetwork implements Network
+{
     private static final int DEFAULT_POOL_SIZE = 4096;
 
     /**
      * @deprecated Should never have been exposed in the API. This field may be removed in a future
-     *     release of Volley.
+     * release of ZStream.
      */
-    @Deprecated protected final HttpStack mHttpStack;
-
-    private final BaseHttpStack mBaseHttpStack;
-
+    @Deprecated
+    protected final HttpStack mHttpStack;
     protected final ByteArrayPool mPool;
+    private final BaseHttpStack mBaseHttpStack;
 
     /**
      * @param httpStack HTTP stack to be used
      * @deprecated use {@link #BasicNetwork(BaseHttpStack)} instead to avoid depending on Apache
-     *     HTTP. This method may be removed in a future release of Volley.
+     * HTTP. This method may be removed in a future release of ZStream.
      */
     @Deprecated
-    public BasicNetwork(HttpStack httpStack) {
+    public BasicNetwork(HttpStack httpStack)
+    {
         // If a pool isn't passed in, then build a small default pool that will give us a lot of
         // benefit and not use too much memory.
         this(httpStack, new ByteArrayPool(DEFAULT_POOL_SIZE));
@@ -58,19 +63,23 @@ public class BasicNetwork implements Network {
 
     /**
      * @param httpStack HTTP stack to be used
-     * @param pool a buffer pool that improves GC performance in copy operations
+     * @param pool      a buffer pool that improves GC performance in copy operations
      * @deprecated use {@link #BasicNetwork(BaseHttpStack, ByteArrayPool)} instead to avoid
-     *     depending on Apache HTTP. This method may be removed in a future release of Volley.
+     * depending on Apache HTTP. This method may be removed in a future release of ZStream.
      */
     @Deprecated
-    public BasicNetwork(HttpStack httpStack, ByteArrayPool pool) {
+    public BasicNetwork(HttpStack httpStack, ByteArrayPool pool)
+    {
         mHttpStack = httpStack;
         mBaseHttpStack = new AdaptedHttpStack(httpStack);
         mPool = pool;
     }
 
-    /** @param httpStack HTTP stack to be used */
-    public BasicNetwork(BaseHttpStack httpStack) {
+    /**
+     * @param httpStack HTTP stack to be used
+     */
+    public BasicNetwork(BaseHttpStack httpStack)
+    {
         // If a pool isn't passed in, then build a small default pool that will give us a lot of
         // benefit and not use too much memory.
         this(httpStack, new ByteArrayPool(DEFAULT_POOL_SIZE));
@@ -78,9 +87,10 @@ public class BasicNetwork implements Network {
 
     /**
      * @param httpStack HTTP stack to be used
-     * @param pool a buffer pool that improves GC performance in copy operations
+     * @param pool      a buffer pool that improves GC performance in copy operations
      */
-    public BasicNetwork(BaseHttpStack httpStack, ByteArrayPool pool) {
+    public BasicNetwork(BaseHttpStack httpStack, ByteArrayPool pool)
+    {
         mBaseHttpStack = httpStack;
         // Populate mHttpStack for backwards compatibility, since it is a protected field. However,
         // we won't use it directly here, so clients which don't access it directly won't need to
@@ -89,14 +99,34 @@ public class BasicNetwork implements Network {
         mPool = pool;
     }
 
+    /**
+     * Converts Headers[] to Map&lt;String, String&gt;.
+     *
+     * @deprecated Should never have been exposed in the API. This method may be removed in a future
+     * release of ZStream.
+     */
+    @Deprecated
+    protected static Map<String, String> convertHeaders(Header[] headers)
+    {
+        Map<String, String> result = new TreeMap<>(String.CASE_INSENSITIVE_ORDER);
+        for (int i = 0; i < headers.length; i++)
+        {
+            result.put(headers[i].getName(), headers[i].getValue());
+        }
+        return result;
+    }
+
     @Override
-    public NetworkResponse performRequest(Request<?> request) throws VolleyError {
+    public NetworkResponse performRequest(Request<?> request) throws ZStreamError
+    {
         long requestStart = SystemClock.elapsedRealtime();
-        while (true) {
+        while (true)
+        {
             HttpResponse httpResponse = null;
             byte[] responseContents = null;
             List<Header> responseHeaders = Collections.emptyList();
-            try {
+            try
+            {
                 // Gather headers.
                 Map<String, String> additionalRequestHeaders =
                         HttpHeaderParser.getCacheHeaders(request.getCacheEntry());
@@ -105,7 +135,8 @@ public class BasicNetwork implements Network {
 
                 responseHeaders = httpResponse.getHeaders();
                 // Handle cache validation.
-                if (statusCode == HttpURLConnection.HTTP_NOT_MODIFIED) {
+                if (statusCode == HttpURLConnection.HTTP_NOT_MODIFIED)
+                {
                     long requestDuration = SystemClock.elapsedRealtime() - requestStart;
                     return NetworkUtility.getNotModifiedNetworkResponse(
                             request, requestDuration, responseHeaders);
@@ -113,11 +144,13 @@ public class BasicNetwork implements Network {
 
                 // Some responses such as 204s do not have content.  We must check.
                 InputStream inputStream = httpResponse.getContent();
-                if (inputStream != null) {
+                if (inputStream != null)
+                {
                     responseContents =
                             NetworkUtility.inputStreamToBytes(
                                     inputStream, httpResponse.getContentLength(), mPool);
-                } else {
+                } else
+                {
                     // Add 0 byte response as a way of honestly representing a
                     // no-content request.
                     responseContents = new byte[0];
@@ -128,7 +161,8 @@ public class BasicNetwork implements Network {
                 NetworkUtility.logSlowRequests(
                         requestLifetime, request, responseContents, statusCode);
 
-                if (statusCode < 200 || statusCode > 299) {
+                if (statusCode < 200 || statusCode > 299)
+                {
                     throw new IOException();
                 }
                 return new NetworkResponse(
@@ -137,27 +171,13 @@ public class BasicNetwork implements Network {
                         /* notModified= */ false,
                         SystemClock.elapsedRealtime() - requestStart,
                         responseHeaders);
-            } catch (IOException e) {
+            } catch (IOException e)
+            {
                 // This will either throw an exception, breaking us from the loop, or will loop
                 // again and retry the request.
                 NetworkUtility.handleException(
                         request, e, requestStart, httpResponse, responseContents);
             }
         }
-    }
-
-    /**
-     * Converts Headers[] to Map&lt;String, String&gt;.
-     *
-     * @deprecated Should never have been exposed in the API. This method may be removed in a future
-     *     release of Volley.
-     */
-    @Deprecated
-    protected static Map<String, String> convertHeaders(Header[] headers) {
-        Map<String, String> result = new TreeMap<>(String.CASE_INSENSITIVE_ORDER);
-        for (int i = 0; i < headers.length; i++) {
-            result.put(headers[i].getName(), headers[i].getValue());
-        }
-        return result;
     }
 }

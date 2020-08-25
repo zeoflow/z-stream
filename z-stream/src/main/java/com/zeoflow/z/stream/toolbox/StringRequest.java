@@ -18,17 +18,24 @@ package com.zeoflow.z.stream.toolbox;
 
 import androidx.annotation.GuardedBy;
 import androidx.annotation.Nullable;
+
 import com.zeoflow.z.stream.NetworkResponse;
 import com.zeoflow.z.stream.Request;
 import com.zeoflow.z.stream.Response;
 import com.zeoflow.z.stream.Response.ErrorListener;
 import com.zeoflow.z.stream.Response.Listener;
+
 import java.io.UnsupportedEncodingException;
 
-/** A canned request for retrieving the response body at a given URL as a String. */
-public class StringRequest extends Request<String> {
+/**
+ * A canned request for retrieving the response body at a given URL as a String.
+ */
+public class StringRequest extends Request<String>
+{
 
-    /** Lock to guard mListener as it is cleared on cancel() and read on delivery. */
+    /**
+     * Lock to guard mListener as it is cleared on cancel() and read on delivery.
+     */
     private final Object mLock = new Object();
 
     @Nullable
@@ -38,16 +45,17 @@ public class StringRequest extends Request<String> {
     /**
      * Creates a new request with the given method.
      *
-     * @param method the request {@link Method} to use
-     * @param url URL to fetch the string at
-     * @param listener Listener to receive the String response
+     * @param method        the request {@link Method} to use
+     * @param url           URL to fetch the string at
+     * @param listener      Listener to receive the String response
      * @param errorListener Error listener, or null to ignore errors
      */
     public StringRequest(
             int method,
             String url,
             Listener<String> listener,
-            @Nullable ErrorListener errorListener) {
+            @Nullable ErrorListener errorListener)
+    {
         super(method, url, errorListener);
         mListener = listener;
     }
@@ -55,41 +63,50 @@ public class StringRequest extends Request<String> {
     /**
      * Creates a new GET request.
      *
-     * @param url URL to fetch the string at
-     * @param listener Listener to receive the String response
+     * @param url           URL to fetch the string at
+     * @param listener      Listener to receive the String response
      * @param errorListener Error listener, or null to ignore errors
      */
     public StringRequest(
-            String url, Listener<String> listener, @Nullable ErrorListener errorListener) {
+            String url, Listener<String> listener, @Nullable ErrorListener errorListener)
+    {
         this(Method.GET, url, listener, errorListener);
     }
 
     @Override
-    public void cancel() {
+    public void cancel()
+    {
         super.cancel();
-        synchronized (mLock) {
+        synchronized (mLock)
+        {
             mListener = null;
         }
     }
 
     @Override
-    protected void deliverResponse(String response) {
+    protected void deliverResponse(String response)
+    {
         Response.Listener<String> listener;
-        synchronized (mLock) {
+        synchronized (mLock)
+        {
             listener = mListener;
         }
-        if (listener != null) {
+        if (listener != null)
+        {
             listener.onResponse(response);
         }
     }
 
     @Override
     @SuppressWarnings("DefaultCharset")
-    protected Response<String> parseNetworkResponse(NetworkResponse response) {
+    protected Response<String> parseNetworkResponse(NetworkResponse response)
+    {
         String parsed;
-        try {
+        try
+        {
             parsed = new String(response.data, HttpHeaderParser.parseCharset(response.headers));
-        } catch (UnsupportedEncodingException e) {
+        } catch (UnsupportedEncodingException e)
+        {
             // Since minSdkVersion = 8, we can't call
             // new String(response.data, Charset.defaultCharset())
             // So suppress the warning instead.

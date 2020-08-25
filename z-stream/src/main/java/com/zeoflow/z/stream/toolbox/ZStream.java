@@ -21,46 +21,58 @@ import android.content.pm.PackageInfo;
 import android.content.pm.PackageManager.NameNotFoundException;
 import android.net.http.AndroidHttpClient;
 import android.os.Build;
+
 import com.zeoflow.z.stream.Network;
 import com.zeoflow.z.stream.RequestQueue;
+
 import java.io.File;
 
-public class Volley {
+public class ZStream
+{
 
-    /** Default on-disk cache directory. */
-    private static final String DEFAULT_CACHE_DIR = "volley";
+    /**
+     * Default on-disk cache directory.
+     */
+    private static final String DEFAULT_CACHE_DIR = "zstream";
 
     /**
      * Creates a default instance of the worker pool and calls {@link RequestQueue#start()} on it.
      *
      * @param context A {@link Context} to use for creating the cache dir.
-     * @param stack A {@link BaseHttpStack} to use for the network, or null for default.
+     * @param stack   A {@link BaseHttpStack} to use for the network, or null for default.
      * @return A started {@link RequestQueue} instance.
      */
-    public static RequestQueue newRequestQueue(Context context, BaseHttpStack stack) {
+    public static RequestQueue newRequestQueue(Context context, BaseHttpStack stack)
+    {
         BasicNetwork network;
-        if (stack == null) {
-            if (Build.VERSION.SDK_INT >= 9) {
+        if (stack == null)
+        {
+            if (Build.VERSION.SDK_INT >= 9)
+            {
                 network = new BasicNetwork(new HurlStack());
-            } else {
+            } else
+            {
                 // Prior to Gingerbread, HttpUrlConnection was unreliable.
                 // See: http://android-developers.blogspot.com/2011/09/androids-http-clients.html
                 // At some point in the future we'll move our minSdkVersion past Froyo and can
                 // delete this fallback (along with all Apache HTTP code).
-                String userAgent = "volley/0";
-                try {
+                String userAgent = "zstream/0";
+                try
+                {
                     String packageName = context.getPackageName();
                     PackageInfo info =
                             context.getPackageManager().getPackageInfo(packageName, /* flags= */ 0);
                     userAgent = packageName + "/" + info.versionCode;
-                } catch (NameNotFoundException e) {
+                } catch (NameNotFoundException e)
+                {
                 }
 
                 network =
                         new BasicNetwork(
                                 new HttpClientStack(AndroidHttpClient.newInstance(userAgent)));
             }
-        } else {
+        } else
+        {
             network = new BasicNetwork(stack);
         }
 
@@ -71,31 +83,37 @@ public class Volley {
      * Creates a default instance of the worker pool and calls {@link RequestQueue#start()} on it.
      *
      * @param context A {@link Context} to use for creating the cache dir.
-     * @param stack An {@link HttpStack} to use for the network, or null for default.
+     * @param stack   An {@link HttpStack} to use for the network, or null for default.
      * @return A started {@link RequestQueue} instance.
      * @deprecated Use {@link #newRequestQueue(Context, BaseHttpStack)} instead to avoid depending
-     *     on Apache HTTP. This method may be removed in a future release of Volley.
+     * on Apache HTTP. This method may be removed in a future release of ZStream.
      */
     @Deprecated
     @SuppressWarnings("deprecation")
-    public static RequestQueue newRequestQueue(Context context, HttpStack stack) {
-        if (stack == null) {
+    public static RequestQueue newRequestQueue(Context context, HttpStack stack)
+    {
+        if (stack == null)
+        {
             return newRequestQueue(context, (BaseHttpStack) null);
         }
         return newRequestQueue(context, new BasicNetwork(stack));
     }
 
-    private static RequestQueue newRequestQueue(Context context, Network network) {
+    private static RequestQueue newRequestQueue(Context context, Network network)
+    {
         final Context appContext = context.getApplicationContext();
         // Use a lazy supplier for the cache directory so that newRequestQueue() can be called on
         // main thread without causing strict mode violation.
         DiskBasedCache.FileSupplier cacheSupplier =
-                new DiskBasedCache.FileSupplier() {
+                new DiskBasedCache.FileSupplier()
+                {
                     private File cacheDir = null;
 
                     @Override
-                    public File get() {
-                        if (cacheDir == null) {
+                    public File get()
+                    {
+                        if (cacheDir == null)
+                        {
                             cacheDir = new File(appContext.getCacheDir(), DEFAULT_CACHE_DIR);
                         }
                         return cacheDir;
@@ -112,7 +130,8 @@ public class Volley {
      * @param context A {@link Context} to use for creating the cache dir.
      * @return A started {@link RequestQueue} instance.
      */
-    public static RequestQueue newRequestQueue(Context context) {
+    public static RequestQueue newRequestQueue(Context context)
+    {
         return newRequestQueue(context, (BaseHttpStack) null);
     }
 }

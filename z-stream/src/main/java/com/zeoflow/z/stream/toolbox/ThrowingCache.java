@@ -17,38 +17,48 @@
 package com.zeoflow.z.stream.toolbox;
 
 import androidx.annotation.RestrictTo;
+
 import com.zeoflow.z.stream.Cache;
 
-/** A cache that throws an error if a method is called. */
+/**
+ * A cache that throws an error if a method is called.
+ */
 @RestrictTo(RestrictTo.Scope.LIBRARY)
-public class ThrowingCache implements Cache {
+public class ThrowingCache implements Cache
+{
     @Override
-    public Entry get(String key) {
+    public Entry get(String key)
+    {
         throw new UnsupportedOperationException();
     }
 
     @Override
-    public void put(String key, Entry entry) {
+    public void put(String key, Entry entry)
+    {
         throw new UnsupportedOperationException();
     }
 
     @Override
-    public void initialize() {
+    public void initialize()
+    {
         throw new UnsupportedOperationException();
     }
 
     @Override
-    public void invalidate(String key, boolean fullExpire) {
+    public void invalidate(String key, boolean fullExpire)
+    {
         throw new UnsupportedOperationException();
     }
 
     @Override
-    public void remove(String key) {
+    public void remove(String key)
+    {
         throw new UnsupportedOperationException();
     }
 
     @Override
-    public void clear() {
+    public void clear()
+    {
         throw new UnsupportedOperationException();
     }
 }

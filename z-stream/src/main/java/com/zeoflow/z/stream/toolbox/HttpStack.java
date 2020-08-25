@@ -18,28 +18,31 @@ package com.zeoflow.z.stream.toolbox;
 
 import com.zeoflow.z.stream.AuthFailureError;
 import com.zeoflow.z.stream.Request;
+
+import org.apache.http.HttpResponse;
+
 import java.io.IOException;
 import java.util.Map;
-import org.apache.http.HttpResponse;
 
 /**
  * An HTTP stack abstraction.
  *
  * @deprecated This interface should be avoided as it depends on the deprecated Apache HTTP library.
- *     Use {@link BaseHttpStack} to avoid this dependency. This class may be removed in a future
- *     release of Volley.
+ * Use {@link BaseHttpStack} to avoid this dependency. This class may be removed in a future
+ * release of ZStream.
  */
 @Deprecated
-public interface HttpStack {
+public interface HttpStack
+{
     /**
      * Performs an HTTP request with the given parameters.
      *
      * <p>A GET request is sent if request.getPostBody() == null. A POST request is sent otherwise,
      * and the Content-Type header is set to request.getPostBodyContentType().
      *
-     * @param request the request to perform
+     * @param request           the request to perform
      * @param additionalHeaders additional headers to be sent together with {@link
-     *     Request#getHeaders()}
+     *                          Request#getHeaders()}
      * @return the HTTP response
      */
     HttpResponse performRequest(Request<?> request, Map<String, String> additionalHeaders)

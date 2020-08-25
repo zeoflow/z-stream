@@ -23,12 +23,15 @@ package com.zeoflow.z.stream;
  * errors, including 4xx error codes indicating a client error.
  */
 @SuppressWarnings("serial")
-public class ClientError extends ServerError {
-    public ClientError(NetworkResponse networkResponse) {
+public class ClientError extends ServerError
+{
+    public ClientError(NetworkResponse networkResponse)
+    {
         super(networkResponse);
     }
 
-    public ClientError() {
+    public ClientError()
+    {
         super();
     }
 }

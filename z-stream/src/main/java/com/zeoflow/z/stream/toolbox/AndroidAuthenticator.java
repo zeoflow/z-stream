@@ -23,7 +23,9 @@ import android.annotation.SuppressLint;
 import android.content.Context;
 import android.content.Intent;
 import android.os.Bundle;
+
 import androidx.annotation.VisibleForTesting;
+
 import com.zeoflow.z.stream.AuthFailureError;
 
 /**
@@ -32,7 +34,8 @@ import com.zeoflow.z.stream.AuthFailureError;
  */
 // TODO: Update this to account for runtime permissions
 @SuppressLint("MissingPermission")
-public class AndroidAuthenticator implements Authenticator {
+public class AndroidAuthenticator implements Authenticator
+{
     private final AccountManager mAccountManager;
     private final Account mAccount;
     private final String mAuthTokenType;
@@ -41,24 +44,26 @@ public class AndroidAuthenticator implements Authenticator {
     /**
      * Creates a new authenticator.
      *
-     * @param context Context for accessing AccountManager
-     * @param account Account to authenticate as
+     * @param context       Context for accessing AccountManager
+     * @param account       Account to authenticate as
      * @param authTokenType Auth token type passed to AccountManager
      */
-    public AndroidAuthenticator(Context context, Account account, String authTokenType) {
+    public AndroidAuthenticator(Context context, Account account, String authTokenType)
+    {
         this(context, account, authTokenType, /* notifyAuthFailure= */ false);
     }
 
     /**
      * Creates a new authenticator.
      *
-     * @param context Context for accessing AccountManager
-     * @param account Account to authenticate as
-     * @param authTokenType Auth token type passed to AccountManager
+     * @param context           Context for accessing AccountManager
+     * @param account           Account to authenticate as
+     * @param authTokenType     Auth token type passed to AccountManager
      * @param notifyAuthFailure Whether to raise a notification upon auth failure
      */
     public AndroidAuthenticator(
-            Context context, Account account, String authTokenType, boolean notifyAuthFailure) {
+            Context context, Account account, String authTokenType, boolean notifyAuthFailure)
+    {
         this(AccountManager.get(context), account, authTokenType, notifyAuthFailure);
     }
 
@@ -67,27 +72,35 @@ public class AndroidAuthenticator implements Authenticator {
             AccountManager accountManager,
             Account account,
             String authTokenType,
-            boolean notifyAuthFailure) {
+            boolean notifyAuthFailure)
+    {
         mAccountManager = accountManager;
         mAccount = account;
         mAuthTokenType = authTokenType;
         mNotifyAuthFailure = notifyAuthFailure;
     }
 
-    /** Returns the Account being used by this authenticator. */
-    public Account getAccount() {
+    /**
+     * Returns the Account being used by this authenticator.
+     */
+    public Account getAccount()
+    {
         return mAccount;
     }
 
-    /** Returns the Auth Token Type used by this authenticator. */
-    public String getAuthTokenType() {
+    /**
+     * Returns the Auth Token Type used by this authenticator.
+     */
+    public String getAuthTokenType()
+    {
         return mAuthTokenType;
     }
 
     // TODO: Figure out what to do about notifyAuthFailure
     @SuppressWarnings("deprecation")
     @Override
-    public String getAuthToken() throws AuthFailureError {
+    public String getAuthToken() throws AuthFailureError
+    {
         AccountManagerFuture<Bundle> future =
                 mAccountManager.getAuthToken(
                         mAccount,
@@ -96,20 +109,25 @@ public class AndroidAuthenticator implements Authenticator {
                         /* callback= */ null,
                         /* handler= */ null);
         Bundle result;
-        try {
+        try
+        {
             result = future.getResult();
-        } catch (Exception e) {
+        } catch (Exception e)
+        {
             throw new AuthFailureError("Error while retrieving auth token", e);
         }
         String authToken = null;
-        if (future.isDone() && !future.isCancelled()) {
-            if (result.containsKey(AccountManager.KEY_INTENT)) {
+        if (future.isDone() && !future.isCancelled())
+        {
+            if (result.containsKey(AccountManager.KEY_INTENT))
+            {
                 Intent intent = result.getParcelable(AccountManager.KEY_INTENT);
                 throw new AuthFailureError(intent);
             }
             authToken = result.getString(AccountManager.KEY_AUTHTOKEN);
         }
-        if (authToken == null) {
+        if (authToken == null)
+        {
             throw new AuthFailureError("Got null auth token for type: " + mAuthTokenType);
         }
 
@@ -117,7 +135,8 @@ public class AndroidAuthenticator implements Authenticator {
     }
 
     @Override
-    public void invalidateAuthToken(String authToken) {
+    public void invalidateAuthToken(String authToken)
+    {
         mAccountManager.invalidateAuthToken(mAccount.type, authToken);
     }
 }

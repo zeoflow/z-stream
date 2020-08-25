@@ -18,12 +18,14 @@ package com.zeoflow.z.stream.toolbox;
 import com.zeoflow.z.stream.AuthFailureError;
 import com.zeoflow.z.stream.Header;
 import com.zeoflow.z.stream.Request;
+
+import org.apache.http.conn.ConnectTimeoutException;
+
 import java.io.IOException;
 import java.net.SocketTimeoutException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
-import org.apache.http.conn.ConnectTimeoutException;
 
 /**
  * {@link BaseHttpStack} implementation wrapping a {@link HttpStack}.
@@ -32,21 +34,26 @@ import org.apache.http.conn.ConnectTimeoutException;
  * allowing it to have one implementation based atop {@link BaseHttpStack}.
  */
 @SuppressWarnings("deprecation")
-class AdaptedHttpStack extends BaseHttpStack {
+class AdaptedHttpStack extends BaseHttpStack
+{
 
     private final HttpStack mHttpStack;
 
-    AdaptedHttpStack(HttpStack httpStack) {
+    AdaptedHttpStack(HttpStack httpStack)
+    {
         mHttpStack = httpStack;
     }
 
     @Override
     public HttpResponse executeRequest(Request<?> request, Map<String, String> additionalHeaders)
-            throws IOException, AuthFailureError {
+            throws IOException, AuthFailureError
+    {
         org.apache.http.HttpResponse apacheResp;
-        try {
+        try
+        {
             apacheResp = mHttpStack.performRequest(request, additionalHeaders);
-        } catch (ConnectTimeoutException e) {
+        } catch (ConnectTimeoutException e)
+        {
             // BasicNetwork won't know that this exception should be retried like a timeout, since
             // it's an Apache-specific error, so wrap it in a standard timeout exception.
             throw new SocketTimeoutException(e.getMessage());
@@ -56,16 +63,19 @@ class AdaptedHttpStack extends BaseHttpStack {
 
         org.apache.http.Header[] headers = apacheResp.getAllHeaders();
         List<Header> headerList = new ArrayList<>(headers.length);
-        for (org.apache.http.Header header : headers) {
+        for (org.apache.http.Header header : headers)
+        {
             headerList.add(new Header(header.getName(), header.getValue()));
         }
 
-        if (apacheResp.getEntity() == null) {
+        if (apacheResp.getEntity() == null)
+        {
             return new HttpResponse(statusCode, headerList);
         }
 
         long contentLength = apacheResp.getEntity().getContentLength();
-        if ((int) contentLength != contentLength) {
+        if ((int) contentLength != contentLength)
+        {
             throw new IOException("Response too large: " + contentLength);
         }
 

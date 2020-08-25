@@ -16,34 +16,41 @@
 
 package com.zeoflow.z.stream.toolbox;
 
-import static com.zeoflow.z.stream.toolbox.NetworkUtility.logSlowRequests;
-
 import android.os.SystemClock;
+
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
+
 import com.zeoflow.z.stream.AsyncNetwork;
 import com.zeoflow.z.stream.AuthFailureError;
 import com.zeoflow.z.stream.Header;
 import com.zeoflow.z.stream.NetworkResponse;
 import com.zeoflow.z.stream.Request;
 import com.zeoflow.z.stream.RequestTask;
-import com.zeoflow.z.stream.VolleyError;
+import com.zeoflow.z.stream.ZStreamError;
+
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.HttpURLConnection;
 import java.util.List;
 import java.util.Map;
 
-/** A network performing Volley requests over an {@link HttpStack}. */
-public class BasicAsyncNetwork extends AsyncNetwork {
+import static com.zeoflow.z.stream.toolbox.NetworkUtility.logSlowRequests;
+
+/**
+ * A network performing ZStream requests over an {@link HttpStack}.
+ */
+public class BasicAsyncNetwork extends AsyncNetwork
+{
 
     private final ByteArrayPool mPool;
 
     /**
      * @param httpStack HTTP stack to be used
-     * @param pool a buffer pool that improves GC performance in copy operations
+     * @param pool      a buffer pool that improves GC performance in copy operations
      */
-    private BasicAsyncNetwork(AsyncHttpStack httpStack, ByteArrayPool pool) {
+    private BasicAsyncNetwork(AsyncHttpStack httpStack, ByteArrayPool pool)
+    {
         super(httpStack);
         mPool = pool;
     }
@@ -53,11 +60,13 @@ public class BasicAsyncNetwork extends AsyncNetwork {
             final Request<?> request,
             final long requestStartMs,
             final HttpResponse httpResponse,
-            final OnRequestComplete callback) {
+            final OnRequestComplete callback)
+    {
         final int statusCode = httpResponse.getStatusCode();
         final List<Header> responseHeaders = httpResponse.getHeaders();
         // Handle cache validation.
-        if (statusCode == HttpURLConnection.HTTP_NOT_MODIFIED) {
+        if (statusCode == HttpURLConnection.HTTP_NOT_MODIFIED)
+        {
             long requestDuration = SystemClock.elapsedRealtime() - requestStartMs;
             callback.onSuccess(
                     NetworkUtility.getNotModifiedNetworkResponse(
@@ -66,13 +75,15 @@ public class BasicAsyncNetwork extends AsyncNetwork {
         }
 
         byte[] responseContents = httpResponse.getContentBytes();
-        if (responseContents == null && httpResponse.getContent() == null) {
+        if (responseContents == null && httpResponse.getContent() == null)
+        {
             // Add 0 byte response as a way of honestly representing a
             // no-content request.
             responseContents = new byte[0];
         }
 
-        if (responseContents != null) {
+        if (responseContents != null)
+        {
             onResponseRead(
                     requestStartMs,
                     statusCode,
@@ -107,20 +118,25 @@ public class BasicAsyncNetwork extends AsyncNetwork {
             IOException exception,
             long requestStartMs,
             @Nullable HttpResponse httpResponse,
-            @Nullable byte[] responseContents) {
-        try {
+            @Nullable byte[] responseContents)
+    {
+        try
+        {
             NetworkUtility.handleException(
                     request, exception, requestStartMs, httpResponse, responseContents);
-        } catch (VolleyError volleyError) {
-            callback.onError(volleyError);
+        } catch (ZStreamError zstreamError)
+        {
+            callback.onError(zstreamError);
             return;
         }
         performRequest(request, callback);
     }
 
     @Override
-    public void performRequest(final Request<?> request, final OnRequestComplete callback) {
-        if (getBlockingExecutor() == null) {
+    public void performRequest(final Request<?> request, final OnRequestComplete callback)
+    {
+        if (getBlockingExecutor() == null)
+        {
             throw new IllegalStateException(
                     "mBlockingExecuter must be set before making a request");
         }
@@ -132,19 +148,23 @@ public class BasicAsyncNetwork extends AsyncNetwork {
                 .executeRequest(
                         request,
                         additionalRequestHeaders,
-                        new AsyncHttpStack.OnRequestComplete() {
+                        new AsyncHttpStack.OnRequestComplete()
+                        {
                             @Override
-                            public void onSuccess(HttpResponse httpResponse) {
+                            public void onSuccess(HttpResponse httpResponse)
+                            {
                                 onRequestSucceeded(request, requestStartMs, httpResponse, callback);
                             }
 
                             @Override
-                            public void onAuthError(AuthFailureError authFailureError) {
+                            public void onAuthError(AuthFailureError authFailureError)
+                            {
                                 callback.onError(authFailureError);
                             }
 
                             @Override
-                            public void onError(IOException ioException) {
+                            public void onError(IOException ioException)
+                            {
                                 onRequestFailed(
                                         request,
                                         callback,
@@ -164,12 +184,14 @@ public class BasicAsyncNetwork extends AsyncNetwork {
             Request<?> request,
             OnRequestComplete callback,
             List<Header> responseHeaders,
-            byte[] responseContents) {
+            byte[] responseContents)
+    {
         // if the request is slow, log it.
         long requestLifetime = SystemClock.elapsedRealtime() - requestStartMs;
         logSlowRequests(requestLifetime, request, responseContents, statusCode);
 
-        if (statusCode < 200 || statusCode > 299) {
+        if (statusCode < 200 || statusCode > 299)
+        {
             onRequestFailed(
                     request,
                     callback,
@@ -189,7 +211,48 @@ public class BasicAsyncNetwork extends AsyncNetwork {
                         responseHeaders));
     }
 
-    private class ResponseParsingTask<T> extends RequestTask<T> {
+    /**
+     * Builder is used to build an instance of {@link BasicAsyncNetwork} from values configured by
+     * the setters.
+     */
+    public static class Builder
+    {
+        private static final int DEFAULT_POOL_SIZE = 4096;
+        @NonNull
+        private AsyncHttpStack mAsyncStack;
+        private ByteArrayPool mPool;
+
+        public Builder(@NonNull AsyncHttpStack httpStack)
+        {
+            mAsyncStack = httpStack;
+            mPool = null;
+        }
+
+        /**
+         * Sets the ByteArrayPool to be used. If not set, it will default to a pool with the default
+         * pool size.
+         */
+        public Builder setPool(ByteArrayPool pool)
+        {
+            mPool = pool;
+            return this;
+        }
+
+        /**
+         * Builds the {@link com.zeoflow.z.stream.toolbox.BasicAsyncNetwork}
+         */
+        public BasicAsyncNetwork build()
+        {
+            if (mPool == null)
+            {
+                mPool = new ByteArrayPool(DEFAULT_POOL_SIZE);
+            }
+            return new BasicAsyncNetwork(mAsyncStack, mPool);
+        }
+    }
+
+    private class ResponseParsingTask<T> extends RequestTask<T>
+    {
         InputStream inputStream;
         HttpResponse httpResponse;
         Request<T> request;
@@ -205,7 +268,8 @@ public class BasicAsyncNetwork extends AsyncNetwork {
                 OnRequestComplete callback,
                 long requestStartMs,
                 List<Header> responseHeaders,
-                int statusCode) {
+                int statusCode)
+        {
             super(request);
             this.inputStream = inputStream;
             this.httpResponse = httpResponse;
@@ -217,13 +281,16 @@ public class BasicAsyncNetwork extends AsyncNetwork {
         }
 
         @Override
-        public void run() {
+        public void run()
+        {
             byte[] finalResponseContents;
-            try {
+            try
+            {
                 finalResponseContents =
                         NetworkUtility.inputStreamToBytes(
                                 inputStream, httpResponse.getContentLength(), mPool);
-            } catch (IOException e) {
+            } catch (IOException e)
+            {
                 onRequestFailed(request, callback, e, requestStartMs, httpResponse, null);
                 return;
             }
@@ -235,38 +302,6 @@ public class BasicAsyncNetwork extends AsyncNetwork {
                     callback,
                     responseHeaders,
                     finalResponseContents);
-        }
-    }
-
-    /**
-     * Builder is used to build an instance of {@link BasicAsyncNetwork} from values configured by
-     * the setters.
-     */
-    public static class Builder {
-        private static final int DEFAULT_POOL_SIZE = 4096;
-        @NonNull private AsyncHttpStack mAsyncStack;
-        private ByteArrayPool mPool;
-
-        public Builder(@NonNull AsyncHttpStack httpStack) {
-            mAsyncStack = httpStack;
-            mPool = null;
-        }
-
-        /**
-         * Sets the ByteArrayPool to be used. If not set, it will default to a pool with the default
-         * pool size.
-         */
-        public Builder setPool(ByteArrayPool pool) {
-            mPool = pool;
-            return this;
-        }
-
-        /** Builds the {@link com.zeoflow.z.stream.toolbox.BasicAsyncNetwork} */
-        public BasicAsyncNetwork build() {
-            if (mPool == null) {
-                mPool = new ByteArrayPool(DEFAULT_POOL_SIZE);
-            }
-            return new BasicAsyncNetwork(mAsyncStack, mPool);
         }
     }
 }

@@ -16,42 +16,51 @@
 package com.zeoflow.z.stream.toolbox;
 
 import androidx.annotation.Nullable;
+
 import com.zeoflow.z.stream.Header;
+
 import java.io.ByteArrayInputStream;
 import java.io.InputStream;
 import java.util.Collections;
 import java.util.List;
 
-/** A response from an HTTP server. */
-public final class HttpResponse {
+/**
+ * A response from an HTTP server.
+ */
+public final class HttpResponse
+{
 
     private final int mStatusCode;
     private final List<Header> mHeaders;
     private final int mContentLength;
-    @Nullable private final InputStream mContent;
-    @Nullable private final byte[] mContentBytes;
+    @Nullable
+    private final InputStream mContent;
+    @Nullable
+    private final byte[] mContentBytes;
 
     /**
      * Construct a new HttpResponse for an empty response body.
      *
      * @param statusCode the HTTP status code of the response
-     * @param headers the response headers
+     * @param headers    the response headers
      */
-    public HttpResponse(int statusCode, List<Header> headers) {
+    public HttpResponse(int statusCode, List<Header> headers)
+    {
         this(statusCode, headers, /* contentLength= */ -1, /* content= */ null);
     }
 
     /**
      * Construct a new HttpResponse.
      *
-     * @param statusCode the HTTP status code of the response
-     * @param headers the response headers
+     * @param statusCode    the HTTP status code of the response
+     * @param headers       the response headers
      * @param contentLength the length of the response content. Ignored if there is no content.
-     * @param content an {@link InputStream} of the response content. May be null to indicate that
-     *     the response has no content.
+     * @param content       an {@link InputStream} of the response content. May be null to indicate that
+     *                      the response has no content.
      */
     public HttpResponse(
-            int statusCode, List<Header> headers, int contentLength, InputStream content) {
+            int statusCode, List<Header> headers, int contentLength, InputStream content)
+    {
         mStatusCode = statusCode;
         mHeaders = headers;
         mContentLength = contentLength;
@@ -62,12 +71,13 @@ public final class HttpResponse {
     /**
      * Construct a new HttpResponse.
      *
-     * @param statusCode the HTTP status code of the response
-     * @param headers the response headers
+     * @param statusCode   the HTTP status code of the response
+     * @param headers      the response headers
      * @param contentBytes a byte[] of the response content. This is an optimization for HTTP stacks
-     *     that natively support returning a byte[].
+     *                     that natively support returning a byte[].
      */
-    public HttpResponse(int statusCode, List<Header> headers, byte[] contentBytes) {
+    public HttpResponse(int statusCode, List<Header> headers, byte[] contentBytes)
+    {
         mStatusCode = statusCode;
         mHeaders = headers;
         mContentLength = contentBytes.length;
@@ -75,18 +85,27 @@ public final class HttpResponse {
         mContent = null;
     }
 
-    /** Returns the HTTP status code of the response. */
-    public final int getStatusCode() {
+    /**
+     * Returns the HTTP status code of the response.
+     */
+    public final int getStatusCode()
+    {
         return mStatusCode;
     }
 
-    /** Returns the response headers. Must not be mutated directly. */
-    public final List<Header> getHeaders() {
+    /**
+     * Returns the response headers. Must not be mutated directly.
+     */
+    public final List<Header> getHeaders()
+    {
         return Collections.unmodifiableList(mHeaders);
     }
 
-    /** Returns the length of the content. Only valid if {@link #getContent} is non-null. */
-    public final int getContentLength() {
+    /**
+     * Returns the length of the content. Only valid if {@link #getContent} is non-null.
+     */
+    public final int getContentLength()
+    {
         return mContentLength;
     }
 
@@ -97,7 +116,8 @@ public final class HttpResponse {
      * provided.
      */
     @Nullable
-    public final byte[] getContentBytes() {
+    public final byte[] getContentBytes()
+    {
         return mContentBytes;
     }
 
@@ -106,13 +126,17 @@ public final class HttpResponse {
      * response has no content.
      */
     @Nullable
-    public final InputStream getContent() {
-        if (mContentLength == -1) {
+    public final InputStream getContent()
+    {
+        if (mContentLength == -1)
+        {
             return null;
         }
-        if (mContent != null) {
+        if (mContent != null)
+        {
             return mContent;
-        } else {
+        } else
+        {
             return new ByteArrayInputStream(mContentBytes);
         }
     }

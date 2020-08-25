@@ -16,16 +16,23 @@
 
 package com.zeoflow.z.stream;
 
-/** Indicates that the server's response could not be parsed. */
+/**
+ * Indicates that the server's response could not be parsed.
+ */
 @SuppressWarnings("serial")
-public class ParseError extends VolleyError {
-    public ParseError() {}
+public class ParseError extends ZStreamError
+{
+    public ParseError()
+    {
+    }
 
-    public ParseError(NetworkResponse networkResponse) {
+    public ParseError(NetworkResponse networkResponse)
+    {
         super(networkResponse);
     }
 
-    public ParseError(Throwable cause) {
+    public ParseError(Throwable cause)
+    {
         super(cause);
     }
 }

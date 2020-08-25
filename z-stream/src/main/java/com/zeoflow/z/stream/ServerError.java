@@ -16,14 +16,19 @@
 
 package com.zeoflow.z.stream;
 
-/** Indicates that the server responded with an error response. */
+/**
+ * Indicates that the server responded with an error response.
+ */
 @SuppressWarnings("serial")
-public class ServerError extends VolleyError {
-    public ServerError(NetworkResponse networkResponse) {
+public class ServerError extends ZStreamError
+{
+    public ServerError(NetworkResponse networkResponse)
+    {
         super(networkResponse);
     }
 
-    public ServerError() {
+    public ServerError()
+    {
         super();
     }
 }

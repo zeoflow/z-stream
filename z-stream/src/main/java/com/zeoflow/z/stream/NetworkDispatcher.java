@@ -21,7 +21,9 @@ import android.net.TrafficStats;
 import android.os.Build;
 import android.os.Process;
 import android.os.SystemClock;
+
 import androidx.annotation.VisibleForTesting;
+
 import java.util.concurrent.BlockingQueue;
 
 /**
@@ -32,33 +34,45 @@ import java.util.concurrent.BlockingQueue;
  * Cache} interface. Valid responses and errors are posted back to the caller via a {@link
  * ResponseDelivery}.
  */
-public class NetworkDispatcher extends Thread {
+public class NetworkDispatcher extends Thread
+{
 
-    /** The queue of requests to service. */
+    /**
+     * The queue of requests to service.
+     */
     private final BlockingQueue<Request<?>> mQueue;
-    /** The network interface for processing requests. */
+    /**
+     * The network interface for processing requests.
+     */
     private final Network mNetwork;
-    /** The cache to write to. */
+    /**
+     * The cache to write to.
+     */
     private final Cache mCache;
-    /** For posting responses and errors. */
+    /**
+     * For posting responses and errors.
+     */
     private final ResponseDelivery mDelivery;
-    /** Used for telling us to die. */
+    /**
+     * Used for telling us to die.
+     */
     private volatile boolean mQuit = false;
 
     /**
      * Creates a new network dispatcher thread. You must call {@link #start()} in order to begin
      * processing.
      *
-     * @param queue Queue of incoming requests for triage
-     * @param network Network interface to use for performing requests
-     * @param cache Cache interface to use for writing responses to cache
+     * @param queue    Queue of incoming requests for triage
+     * @param network  Network interface to use for performing requests
+     * @param cache    Cache interface to use for writing responses to cache
      * @param delivery Delivery interface to use for posting responses
      */
     public NetworkDispatcher(
             BlockingQueue<Request<?>> queue,
             Network network,
             Cache cache,
-            ResponseDelivery delivery) {
+            ResponseDelivery delivery)
+    {
         mQueue = queue;
         mNetwork = network;
         mCache = cache;
@@ -69,32 +83,40 @@ public class NetworkDispatcher extends Thread {
      * Forces this dispatcher to quit immediately. If any requests are still in the queue, they are
      * not guaranteed to be processed.
      */
-    public void quit() {
+    public void quit()
+    {
         mQuit = true;
         interrupt();
     }
 
     @TargetApi(Build.VERSION_CODES.ICE_CREAM_SANDWICH)
-    private void addTrafficStatsTag(Request<?> request) {
+    private void addTrafficStatsTag(Request<?> request)
+    {
         // Tag the request (if API >= 14)
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.ICE_CREAM_SANDWICH) {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.ICE_CREAM_SANDWICH)
+        {
             TrafficStats.setThreadStatsTag(request.getTrafficStatsTag());
         }
     }
 
     @Override
-    public void run() {
+    public void run()
+    {
         Process.setThreadPriority(Process.THREAD_PRIORITY_BACKGROUND);
-        while (true) {
-            try {
+        while (true)
+        {
+            try
+            {
                 processRequest();
-            } catch (InterruptedException e) {
+            } catch (InterruptedException e)
+            {
                 // We may have been interrupted because it was time to quit.
-                if (mQuit) {
+                if (mQuit)
+                {
                     Thread.currentThread().interrupt();
                     return;
                 }
-                VolleyLog.e(
+                ZStreamLog.e(
                         "Ignoring spurious interrupt of NetworkDispatcher thread; "
                                 + "use quit() to terminate it");
             }
@@ -104,23 +126,27 @@ public class NetworkDispatcher extends Thread {
     // Extracted to its own method to ensure locals have a constrained liveness scope by the GC.
     // This is needed to avoid keeping previous request references alive for an indeterminate amount
     // of time. Update consumer-proguard-rules.pro when modifying this. See also
-    // https://github.com/google/volley/issues/114
-    private void processRequest() throws InterruptedException {
+    // https://github.com/google/zstream/issues/114
+    private void processRequest() throws InterruptedException
+    {
         // Take a request from the queue.
         Request<?> request = mQueue.take();
         processRequest(request);
     }
 
     @VisibleForTesting
-    void processRequest(Request<?> request) {
+    void processRequest(Request<?> request)
+    {
         long startTimeMs = SystemClock.elapsedRealtime();
         request.sendEvent(RequestQueue.RequestEvent.REQUEST_NETWORK_DISPATCH_STARTED);
-        try {
+        try
+        {
             request.addMarker("network-queue-take");
 
             // If the request was cancelled already, do not perform the
             // network request.
-            if (request.isCanceled()) {
+            if (request.isCanceled())
+            {
                 request.finish("network-discard-cancelled");
                 request.notifyListenerResponseNotUsable();
                 return;
@@ -134,7 +160,8 @@ public class NetworkDispatcher extends Thread {
 
             // If the server returned 304 AND we delivered a response already,
             // we're done -- don't deliver a second identical response.
-            if (networkResponse.notModified && request.hasHadResponseDelivered()) {
+            if (networkResponse.notModified && request.hasHadResponseDelivered())
+            {
                 request.finish("not-modified");
                 request.notifyListenerResponseNotUsable();
                 return;
@@ -146,7 +173,8 @@ public class NetworkDispatcher extends Thread {
 
             // Write to cache if applicable.
             // TODO: Only update cache metadata instead of entire record for 304s.
-            if (request.shouldCache() && response.cacheEntry != null) {
+            if (request.shouldCache() && response.cacheEntry != null)
+            {
                 mCache.put(request.getCacheKey(), response.cacheEntry);
                 request.addMarker("network-cache-written");
             }
@@ -155,22 +183,26 @@ public class NetworkDispatcher extends Thread {
             request.markDelivered();
             mDelivery.postResponse(request, response);
             request.notifyListenerResponseReceived(response);
-        } catch (VolleyError volleyError) {
-            volleyError.setNetworkTimeMs(SystemClock.elapsedRealtime() - startTimeMs);
-            parseAndDeliverNetworkError(request, volleyError);
+        } catch (ZStreamError zstreamError)
+        {
+            zstreamError.setNetworkTimeMs(SystemClock.elapsedRealtime() - startTimeMs);
+            parseAndDeliverNetworkError(request, zstreamError);
             request.notifyListenerResponseNotUsable();
-        } catch (Exception e) {
-            VolleyLog.e(e, "Unhandled exception %s", e.toString());
-            VolleyError volleyError = new VolleyError(e);
-            volleyError.setNetworkTimeMs(SystemClock.elapsedRealtime() - startTimeMs);
-            mDelivery.postError(request, volleyError);
+        } catch (Exception e)
+        {
+            ZStreamLog.e(e, "Unhandled exception %s", e.toString());
+            ZStreamError zstreamError = new ZStreamError(e);
+            zstreamError.setNetworkTimeMs(SystemClock.elapsedRealtime() - startTimeMs);
+            mDelivery.postError(request, zstreamError);
             request.notifyListenerResponseNotUsable();
-        } finally {
+        } finally
+        {
             request.sendEvent(RequestQueue.RequestEvent.REQUEST_NETWORK_DISPATCH_FINISHED);
         }
     }
 
-    private void parseAndDeliverNetworkError(Request<?> request, VolleyError error) {
+    private void parseAndDeliverNetworkError(Request<?> request, ZStreamError error)
+    {
         error = request.parseNetworkError(error);
         mDelivery.postError(request, error);
     }

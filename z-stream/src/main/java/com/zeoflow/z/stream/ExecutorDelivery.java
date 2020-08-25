@@ -17,11 +17,17 @@
 package com.zeoflow.z.stream;
 
 import android.os.Handler;
+
 import java.util.concurrent.Executor;
 
-/** Delivers responses and errors. */
-public class ExecutorDelivery implements ResponseDelivery {
-    /** Used for posting responses, typically to the main thread. */
+/**
+ * Delivers responses and errors.
+ */
+public class ExecutorDelivery implements ResponseDelivery
+{
+    /**
+     * Used for posting responses, typically to the main thread.
+     */
     private final Executor mResponsePoster;
 
     /**
@@ -29,12 +35,15 @@ public class ExecutorDelivery implements ResponseDelivery {
      *
      * @param handler {@link Handler} to post responses on
      */
-    public ExecutorDelivery(final Handler handler) {
+    public ExecutorDelivery(final Handler handler)
+    {
         // Make an Executor that just wraps the handler.
         mResponsePoster =
-                new Executor() {
+                new Executor()
+                {
                     @Override
-                    public void execute(Runnable command) {
+                    public void execute(Runnable command)
+                    {
                         handler.post(command);
                     }
                 };
@@ -45,37 +54,45 @@ public class ExecutorDelivery implements ResponseDelivery {
      *
      * @param executor For running delivery tasks
      */
-    public ExecutorDelivery(Executor executor) {
+    public ExecutorDelivery(Executor executor)
+    {
         mResponsePoster = executor;
     }
 
     @Override
-    public void postResponse(Request<?> request, Response<?> response) {
+    public void postResponse(Request<?> request, Response<?> response)
+    {
         postResponse(request, response, null);
     }
 
     @Override
-    public void postResponse(Request<?> request, Response<?> response, Runnable runnable) {
+    public void postResponse(Request<?> request, Response<?> response, Runnable runnable)
+    {
         request.markDelivered();
         request.addMarker("post-response");
         mResponsePoster.execute(new ResponseDeliveryRunnable(request, response, runnable));
     }
 
     @Override
-    public void postError(Request<?> request, VolleyError error) {
+    public void postError(Request<?> request, ZStreamError error)
+    {
         request.addMarker("post-error");
         Response<?> response = Response.error(error);
         mResponsePoster.execute(new ResponseDeliveryRunnable(request, response, null));
     }
 
-    /** A Runnable used for delivering network responses to a listener on the main thread. */
+    /**
+     * A Runnable used for delivering network responses to a listener on the main thread.
+     */
     @SuppressWarnings("rawtypes")
-    private static class ResponseDeliveryRunnable implements Runnable {
+    private static class ResponseDeliveryRunnable implements Runnable
+    {
         private final Request mRequest;
         private final Response mResponse;
         private final Runnable mRunnable;
 
-        public ResponseDeliveryRunnable(Request request, Response response, Runnable runnable) {
+        public ResponseDeliveryRunnable(Request request, Response response, Runnable runnable)
+        {
             mRequest = request;
             mResponse = response;
             mRunnable = runnable;
@@ -83,7 +100,8 @@ public class ExecutorDelivery implements ResponseDelivery {
 
         @SuppressWarnings("unchecked")
         @Override
-        public void run() {
+        public void run()
+        {
             // NOTE: If cancel() is called off the thread that we're currently running in (by
             // default, the main thread), we cannot guarantee that deliverResponse()/deliverError()
             // won't be called, since it may be canceled after we check isCanceled() but before we
@@ -92,28 +110,34 @@ public class ExecutorDelivery implements ResponseDelivery {
             // listener after cancel() has been called.
 
             // If this request has canceled, finish it and don't deliver.
-            if (mRequest.isCanceled()) {
+            if (mRequest.isCanceled())
+            {
                 mRequest.finish("canceled-at-delivery");
                 return;
             }
 
             // Deliver a normal response or error, depending.
-            if (mResponse.isSuccess()) {
+            if (mResponse.isSuccess())
+            {
                 mRequest.deliverResponse(mResponse.result);
-            } else {
+            } else
+            {
                 mRequest.deliverError(mResponse.error);
             }
 
             // If this is an intermediate response, add a marker, otherwise we're done
             // and the request can be finished.
-            if (mResponse.intermediate) {
+            if (mResponse.intermediate)
+            {
                 mRequest.addMarker("intermediate-response");
-            } else {
+            } else
+            {
                 mRequest.finish("done");
             }
 
             // If we have been provided a post-delivery runnable, run it.
-            if (mRunnable != null) {
+            if (mRunnable != null)
+            {
                 mRunnable.run();
             }
         }

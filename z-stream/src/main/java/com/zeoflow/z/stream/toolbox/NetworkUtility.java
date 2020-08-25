@@ -17,7 +17,9 @@
 package com.zeoflow.z.stream.toolbox;
 
 import android.os.SystemClock;
+
 import androidx.annotation.Nullable;
+
 import com.zeoflow.z.stream.AuthFailureError;
 import com.zeoflow.z.stream.Cache;
 import com.zeoflow.z.stream.ClientError;
@@ -29,8 +31,9 @@ import com.zeoflow.z.stream.Request;
 import com.zeoflow.z.stream.RetryPolicy;
 import com.zeoflow.z.stream.ServerError;
 import com.zeoflow.z.stream.TimeoutError;
-import com.zeoflow.z.stream.VolleyError;
-import com.zeoflow.z.stream.VolleyLog;
+import com.zeoflow.z.stream.ZStreamError;
+import com.zeoflow.z.stream.ZStreamLog;
+
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.HttpURLConnection;
@@ -42,16 +45,23 @@ import java.util.List;
  * Utility class for methods that are shared between {@link BasicNetwork} and {@link
  * BasicAsyncNetwork}
  */
-public final class NetworkUtility {
+public final class NetworkUtility
+{
     private static final int SLOW_REQUEST_THRESHOLD_MS = 3000;
 
-    private NetworkUtility() {}
+    private NetworkUtility()
+    {
+    }
 
-    /** Logs requests that took over SLOW_REQUEST_THRESHOLD_MS to complete. */
+    /**
+     * Logs requests that took over SLOW_REQUEST_THRESHOLD_MS to complete.
+     */
     static void logSlowRequests(
-            long requestLifetime, Request<?> request, byte[] responseContents, int statusCode) {
-        if (VolleyLog.DEBUG || requestLifetime > SLOW_REQUEST_THRESHOLD_MS) {
-            VolleyLog.d(
+            long requestLifetime, Request<?> request, byte[] responseContents, int statusCode)
+    {
+        if (ZStreamLog.DEBUG || requestLifetime > SLOW_REQUEST_THRESHOLD_MS)
+        {
+            ZStreamLog.d(
                     "HTTP response for request=<%s> [lifetime=%d], [size=%s], "
                             + "[rc=%d], [retryCount=%s]",
                     request,
@@ -63,9 +73,11 @@ public final class NetworkUtility {
     }
 
     static NetworkResponse getNotModifiedNetworkResponse(
-            Request<?> request, long requestDuration, List<Header> responseHeaders) {
+            Request<?> request, long requestDuration, List<Header> responseHeaders)
+    {
         Cache.Entry entry = request.getCacheEntry();
-        if (entry == null) {
+        if (entry == null)
+        {
             return new NetworkResponse(
                     HttpURLConnection.HTTP_NOT_MODIFIED,
                     /* data= */ null,
@@ -83,28 +95,37 @@ public final class NetworkUtility {
                 combinedHeaders);
     }
 
-    /** Reads the contents of an InputStream into a byte[]. */
+    /**
+     * Reads the contents of an InputStream into a byte[].
+     */
     static byte[] inputStreamToBytes(InputStream in, int contentLength, ByteArrayPool pool)
-            throws IOException {
+            throws IOException
+    {
         PoolingByteArrayOutputStream bytes = new PoolingByteArrayOutputStream(pool, contentLength);
         byte[] buffer = null;
-        try {
+        try
+        {
             buffer = pool.getBuf(1024);
             int count;
-            while ((count = in.read(buffer)) != -1) {
+            while ((count = in.read(buffer)) != -1)
+            {
                 bytes.write(buffer, 0, count);
             }
             return bytes.toByteArray();
-        } finally {
-            try {
+        } finally
+        {
+            try
+            {
                 // Close the InputStream and release the resources by "consuming the content".
-                if (in != null) {
+                if (in != null)
+                {
                     in.close();
                 }
-            } catch (IOException e) {
+            } catch (IOException e)
+            {
                 // This can happen if there was an exception above that left the stream in
                 // an invalid state.
-                VolleyLog.v("Error occurred when closing InputStream");
+                ZStreamLog.v("Error occurred when closing InputStream");
             }
             pool.returnBuf(buffer);
             bytes.close();
@@ -118,13 +139,16 @@ public final class NetworkUtility {
      * @param request The request to use.
      */
     private static void attemptRetryOnException(
-            final String logPrefix, final Request<?> request, final VolleyError exception)
-            throws VolleyError {
+            final String logPrefix, final Request<?> request, final ZStreamError exception)
+            throws ZStreamError
+    {
         final RetryPolicy retryPolicy = request.getRetryPolicy();
         final int oldTimeout = request.getTimeoutMs();
-        try {
+        try
+        {
             retryPolicy.retry(exception);
-        } catch (VolleyError e) {
+        } catch (ZStreamError e)
+        {
             request.addMarker(
                     String.format("%s-timeout-giveup [timeout=%s]", logPrefix, oldTimeout));
             throw e;
@@ -142,26 +166,35 @@ public final class NetworkUtility {
             long requestStartMs,
             @Nullable HttpResponse httpResponse,
             @Nullable byte[] responseContents)
-            throws VolleyError {
-        if (exception instanceof SocketTimeoutException) {
+            throws ZStreamError
+    {
+        if (exception instanceof SocketTimeoutException)
+        {
             attemptRetryOnException("socket", request, new TimeoutError());
-        } else if (exception instanceof MalformedURLException) {
+        } else if (exception instanceof MalformedURLException)
+        {
             throw new RuntimeException("Bad URL " + request.getUrl(), exception);
-        } else {
+        } else
+        {
             int statusCode;
-            if (httpResponse != null) {
+            if (httpResponse != null)
+            {
                 statusCode = httpResponse.getStatusCode();
-            } else {
-                if (request.shouldRetryConnectionErrors()) {
+            } else
+            {
+                if (request.shouldRetryConnectionErrors())
+                {
                     attemptRetryOnException("connection", request, new NoConnectionError());
                     return;
-                } else {
+                } else
+                {
                     throw new NoConnectionError(exception);
                 }
             }
-            VolleyLog.e("Unexpected response code %d for %s", statusCode, request.getUrl());
+            ZStreamLog.e("Unexpected response code %d for %s", statusCode, request.getUrl());
             NetworkResponse networkResponse;
-            if (responseContents != null) {
+            if (responseContents != null)
+            {
                 List<Header> responseHeaders;
                 responseHeaders = httpResponse.getHeaders();
                 networkResponse =
@@ -172,23 +205,30 @@ public final class NetworkUtility {
                                 SystemClock.elapsedRealtime() - requestStartMs,
                                 responseHeaders);
                 if (statusCode == HttpURLConnection.HTTP_UNAUTHORIZED
-                        || statusCode == HttpURLConnection.HTTP_FORBIDDEN) {
+                        || statusCode == HttpURLConnection.HTTP_FORBIDDEN)
+                {
                     attemptRetryOnException("auth", request, new AuthFailureError(networkResponse));
-                } else if (statusCode >= 400 && statusCode <= 499) {
+                } else if (statusCode >= 400 && statusCode <= 499)
+                {
                     // Don't retry other client errors.
                     throw new ClientError(networkResponse);
-                } else if (statusCode >= 500 && statusCode <= 599) {
-                    if (request.shouldRetryServerErrors()) {
+                } else if (statusCode >= 500 && statusCode <= 599)
+                {
+                    if (request.shouldRetryServerErrors())
+                    {
                         attemptRetryOnException(
                                 "server", request, new ServerError(networkResponse));
-                    } else {
+                    } else
+                    {
                         throw new ServerError(networkResponse);
                     }
-                } else {
+                } else
+                {
                     // 3xx? No reason to retry.
                     throw new ServerError(networkResponse);
                 }
-            } else {
+            } else
+            {
                 attemptRetryOnException("network", request, new NetworkError());
             }
         }

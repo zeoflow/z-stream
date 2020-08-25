@@ -20,15 +20,22 @@ import android.text.TextUtils;
 import android.util.AttributeSet;
 import android.view.ViewGroup.LayoutParams;
 import android.widget.ImageView;
+
 import androidx.annotation.MainThread;
 import androidx.annotation.Nullable;
-import com.zeoflow.z.stream.VolleyError;
+
+import com.zeoflow.z.stream.ZStreamError;
 import com.zeoflow.z.stream.toolbox.ImageLoader.ImageContainer;
 import com.zeoflow.z.stream.toolbox.ImageLoader.ImageListener;
 
-/** Handles fetching an image from a URL as well as the life-cycle of the associated request. */
-public class NetworkImageView extends ImageView {
-    /** The URL of the network image to load */
+/**
+ * Handles fetching an image from a URL as well as the life-cycle of the associated request.
+ */
+public class NetworkImageView extends ImageView
+{
+    /**
+     * The URL of the network image to load
+     */
     private String mUrl;
 
     /**
@@ -41,13 +48,15 @@ public class NetworkImageView extends ImageView {
      * Drawable of the image to be used as a placeholder until the network image is loaded. Won't be
      * set at the same time as mDefaultImageId or mDefaultImageBitmap.
      */
-    @Nullable private Drawable mDefaultImageDrawable;
+    @Nullable
+    private Drawable mDefaultImageDrawable;
 
     /**
      * Bitmap of the image to be used as a placeholder until the network image is loaded. Won't be
      * set at the same time as mDefaultImageId or mDefaultImageDrawable.
      */
-    @Nullable private Bitmap mDefaultImageBitmap;
+    @Nullable
+    private Bitmap mDefaultImageBitmap;
 
     /**
      * Resource ID of the image to be used if the network response fails. Won't be set at the same
@@ -59,29 +68,38 @@ public class NetworkImageView extends ImageView {
      * Bitmap of the image to be used if the network response fails. Won't be set at the same time
      * as mErrorImageId or mErrorImageBitmap.
      */
-    @Nullable private Drawable mErrorImageDrawable;
+    @Nullable
+    private Drawable mErrorImageDrawable;
 
     /**
      * Bitmap of the image to be used if the network response fails. Won't be set at the same time
      * as mErrorImageId or mErrorImageDrawable.
      */
-    @Nullable private Bitmap mErrorImageBitmap;
+    @Nullable
+    private Bitmap mErrorImageBitmap;
 
-    /** Local copy of the ImageLoader. */
+    /**
+     * Local copy of the ImageLoader.
+     */
     private ImageLoader mImageLoader;
 
-    /** Current ImageContainer. (either in-flight or finished) */
+    /**
+     * Current ImageContainer. (either in-flight or finished)
+     */
     private ImageContainer mImageContainer;
 
-    public NetworkImageView(Context context) {
+    public NetworkImageView(Context context)
+    {
         this(context, null);
     }
 
-    public NetworkImageView(Context context, AttributeSet attrs) {
+    public NetworkImageView(Context context, AttributeSet attrs)
+    {
         this(context, attrs, 0);
     }
 
-    public NetworkImageView(Context context, AttributeSet attrs, int defStyle) {
+    public NetworkImageView(Context context, AttributeSet attrs, int defStyle)
+    {
         super(context, attrs, defStyle);
     }
 
@@ -97,11 +115,12 @@ public class NetworkImageView extends ImageView {
      *
      * <p>Must be called from the main thread.
      *
-     * @param url The URL that should be loaded into this ImageView.
+     * @param url         The URL that should be loaded into this ImageView.
      * @param imageLoader ImageLoader that will be used to make the request.
      */
     @MainThread
-    public void setImageUrl(String url, ImageLoader imageLoader) {
+    public void setImageUrl(String url, ImageLoader imageLoader)
+    {
         Threads.throwIfNotOnMainThread();
         mUrl = url;
         mImageLoader = imageLoader;
@@ -116,7 +135,8 @@ public class NetworkImageView extends ImageView {
      * <p>This will clear anything set by {@link NetworkImageView#setDefaultImageBitmap} or {@link
      * NetworkImageView#setDefaultImageDrawable}.
      */
-    public void setDefaultImageResId(int defaultImage) {
+    public void setDefaultImageResId(int defaultImage)
+    {
         mDefaultImageBitmap = null;
         mDefaultImageDrawable = null;
         mDefaultImageId = defaultImage;
@@ -129,7 +149,8 @@ public class NetworkImageView extends ImageView {
      * <p>This will clear anything set by {@link NetworkImageView#setDefaultImageResId} or {@link
      * NetworkImageView#setDefaultImageBitmap}.
      */
-    public void setDefaultImageDrawable(@Nullable Drawable defaultImageDrawable) {
+    public void setDefaultImageDrawable(@Nullable Drawable defaultImageDrawable)
+    {
         mDefaultImageId = 0;
         mDefaultImageBitmap = null;
         mDefaultImageDrawable = defaultImageDrawable;
@@ -142,7 +163,8 @@ public class NetworkImageView extends ImageView {
      * <p>This will clear anything set by {@link NetworkImageView#setDefaultImageResId} or {@link
      * NetworkImageView#setDefaultImageDrawable}.
      */
-    public void setDefaultImageBitmap(Bitmap defaultImage) {
+    public void setDefaultImageBitmap(Bitmap defaultImage)
+    {
         mDefaultImageId = 0;
         mDefaultImageDrawable = null;
         mDefaultImageBitmap = defaultImage;
@@ -155,7 +177,8 @@ public class NetworkImageView extends ImageView {
      * <p>This will clear anything set by {@link NetworkImageView#setErrorImageBitmap} or {@link
      * NetworkImageView#setErrorImageDrawable}.
      */
-    public void setErrorImageResId(int errorImage) {
+    public void setErrorImageResId(int errorImage)
+    {
         mErrorImageBitmap = null;
         mErrorImageDrawable = null;
         mErrorImageId = errorImage;
@@ -168,7 +191,8 @@ public class NetworkImageView extends ImageView {
      * <p>This will clear anything set by {@link NetworkImageView#setErrorImageResId} or {@link
      * NetworkImageView#setDefaultImageBitmap}.
      */
-    public void setErrorImageDrawable(@Nullable Drawable errorImageDrawable) {
+    public void setErrorImageDrawable(@Nullable Drawable errorImageDrawable)
+    {
         mErrorImageId = 0;
         mErrorImageBitmap = null;
         mErrorImageDrawable = errorImageDrawable;
@@ -181,7 +205,8 @@ public class NetworkImageView extends ImageView {
      * <p>This will clear anything set by {@link NetworkImageView#setErrorImageResId} or {@link
      * NetworkImageView#setDefaultImageDrawable}.
      */
-    public void setErrorImageBitmap(Bitmap errorImage) {
+    public void setErrorImageBitmap(Bitmap errorImage)
+    {
         mErrorImageId = 0;
         mErrorImageDrawable = null;
         mErrorImageBitmap = errorImage;
@@ -192,13 +217,15 @@ public class NetworkImageView extends ImageView {
      *
      * @param isInLayoutPass True if this was invoked from a layout pass, false otherwise.
      */
-    void loadImageIfNecessary(final boolean isInLayoutPass) {
+    void loadImageIfNecessary(final boolean isInLayoutPass)
+    {
         int width = getWidth();
         int height = getHeight();
         ScaleType scaleType = getScaleType();
 
         boolean wrapWidth = false, wrapHeight = false;
-        if (getLayoutParams() != null) {
+        if (getLayoutParams() != null)
+        {
             wrapWidth = getLayoutParams().width == LayoutParams.WRAP_CONTENT;
             wrapHeight = getLayoutParams().height == LayoutParams.WRAP_CONTENT;
         }
@@ -206,14 +233,17 @@ public class NetworkImageView extends ImageView {
         // if the view's bounds aren't known yet, and this is not a wrap-content/wrap-content
         // view, hold off on loading the image.
         boolean isFullyWrapContent = wrapWidth && wrapHeight;
-        if (width == 0 && height == 0 && !isFullyWrapContent) {
+        if (width == 0 && height == 0 && !isFullyWrapContent)
+        {
             return;
         }
 
         // if the URL to be loaded in this view is empty, cancel any old requests and clear the
         // currently loaded image.
-        if (TextUtils.isEmpty(mUrl)) {
-            if (mImageContainer != null) {
+        if (TextUtils.isEmpty(mUrl))
+        {
+            if (mImageContainer != null)
+            {
                 mImageContainer.cancelRequest();
                 mImageContainer = null;
             }
@@ -222,11 +252,14 @@ public class NetworkImageView extends ImageView {
         }
 
         // if there was an old request in this view, check if it needs to be canceled.
-        if (mImageContainer != null && mImageContainer.getRequestUrl() != null) {
-            if (mImageContainer.getRequestUrl().equals(mUrl)) {
+        if (mImageContainer != null && mImageContainer.getRequestUrl() != null)
+        {
+            if (mImageContainer.getRequestUrl().equals(mUrl))
+            {
                 // if the request is from the same URL, return.
                 return;
-            } else {
+            } else
+            {
                 // if there is a pre-existing request, cancel it if it's fetching a different URL.
                 mImageContainer.cancelRequest();
                 setDefaultImageOrNull();
@@ -244,21 +277,27 @@ public class NetworkImageView extends ImageView {
         mImageContainer =
                 mImageLoader.get(
                         mUrl,
-                        new ImageListener() {
+                        new ImageListener()
+                        {
                             @Override
-                            public void onErrorResponse(VolleyError error) {
-                                if (mErrorImageId != 0) {
+                            public void onErrorResponse(ZStreamError error)
+                            {
+                                if (mErrorImageId != 0)
+                                {
                                     setImageResource(mErrorImageId);
-                                } else if (mErrorImageDrawable != null) {
+                                } else if (mErrorImageDrawable != null)
+                                {
                                     setImageDrawable(mErrorImageDrawable);
-                                } else if (mErrorImageBitmap != null) {
+                                } else if (mErrorImageBitmap != null)
+                                {
                                     setImageBitmap(mErrorImageBitmap);
                                 }
                             }
 
                             @Override
                             public void onResponse(
-                                    final ImageContainer response, boolean isImmediate) {
+                                    final ImageContainer response, boolean isImmediate)
+                            {
                                 // If this was an immediate response that was delivered inside of a
                                 // layout
                                 // pass do not set the image immediately as it will trigger a
@@ -266,24 +305,31 @@ public class NetworkImageView extends ImageView {
                                 // inside of a layout. Instead, defer setting the image by posting
                                 // back to
                                 // the main thread.
-                                if (isImmediate && isInLayoutPass) {
+                                if (isImmediate && isInLayoutPass)
+                                {
                                     post(
-                                            new Runnable() {
+                                            new Runnable()
+                                            {
                                                 @Override
-                                                public void run() {
+                                                public void run()
+                                                {
                                                     onResponse(response, /* isImmediate= */ false);
                                                 }
                                             });
                                     return;
                                 }
 
-                                if (response.getBitmap() != null) {
+                                if (response.getBitmap() != null)
+                                {
                                     setImageBitmap(response.getBitmap());
-                                } else if (mDefaultImageId != 0) {
+                                } else if (mDefaultImageId != 0)
+                                {
                                     setImageResource(mDefaultImageId);
-                                } else if (mDefaultImageDrawable != null) {
+                                } else if (mDefaultImageDrawable != null)
+                                {
                                     setImageDrawable(mDefaultImageDrawable);
-                                } else if (mDefaultImageBitmap != null) {
+                                } else if (mDefaultImageBitmap != null)
+                                {
                                     setImageBitmap(mDefaultImageBitmap);
                                 }
                             }
@@ -293,27 +339,35 @@ public class NetworkImageView extends ImageView {
                         scaleType);
     }
 
-    private void setDefaultImageOrNull() {
-        if (mDefaultImageId != 0) {
+    private void setDefaultImageOrNull()
+    {
+        if (mDefaultImageId != 0)
+        {
             setImageResource(mDefaultImageId);
-        } else if (mDefaultImageDrawable != null) {
+        } else if (mDefaultImageDrawable != null)
+        {
             setImageDrawable(mDefaultImageDrawable);
-        } else if (mDefaultImageBitmap != null) {
+        } else if (mDefaultImageBitmap != null)
+        {
             setImageBitmap(mDefaultImageBitmap);
-        } else {
+        } else
+        {
             setImageBitmap(null);
         }
     }
 
     @Override
-    protected void onLayout(boolean changed, int left, int top, int right, int bottom) {
+    protected void onLayout(boolean changed, int left, int top, int right, int bottom)
+    {
         super.onLayout(changed, left, top, right, bottom);
         loadImageIfNecessary(/* isInLayoutPass= */ true);
     }
 
     @Override
-    protected void onDetachedFromWindow() {
-        if (mImageContainer != null) {
+    protected void onDetachedFromWindow()
+    {
+        if (mImageContainer != null)
+        {
             // If the view was bound to an image request, cancel it and clear
             // out the image from the view.
             mImageContainer.cancelRequest();
@@ -325,7 +379,8 @@ public class NetworkImageView extends ImageView {
     }
 
     @Override
-    protected void drawableStateChanged() {
+    protected void drawableStateChanged()
+    {
         super.drawableStateChanged();
         invalidate();
     }

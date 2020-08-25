@@ -17,12 +17,16 @@
 package com.zeoflow.z.stream;
 
 import androidx.annotation.Nullable;
+
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 
-/** An interface for a cache keyed by a String with a byte array as data. */
-public interface Cache {
+/**
+ * An interface for a cache keyed by a String with a byte array as data.
+ */
+public interface Cache
+{
     /**
      * Retrieves an entry from the cache.
      *
@@ -35,7 +39,7 @@ public interface Cache {
     /**
      * Adds or replaces an entry to the cache.
      *
-     * @param key Cache key
+     * @param key   Cache key
      * @param entry Data to store and metadata for cache coherency, TTL, etc.
      */
     void put(String key, Entry entry);
@@ -49,7 +53,7 @@ public interface Cache {
     /**
      * Invalidates an entry in the cache.
      *
-     * @param key Cache key
+     * @param key        Cache key
      * @param fullExpire True to fully expire the entry, false to soft expire
      */
     void invalidate(String key, boolean fullExpire);
@@ -61,27 +65,44 @@ public interface Cache {
      */
     void remove(String key);
 
-    /** Empties the cache. */
+    /**
+     * Empties the cache.
+     */
     void clear();
 
-    /** Data and metadata for an entry returned by the cache. */
-    class Entry {
-        /** The data returned from cache. */
+    /**
+     * Data and metadata for an entry returned by the cache.
+     */
+    class Entry
+    {
+        /**
+         * The data returned from cache.
+         */
         public byte[] data;
 
-        /** ETag for cache coherency. */
+        /**
+         * ETag for cache coherency.
+         */
         public String etag;
 
-        /** Date of this response as reported by the server. */
+        /**
+         * Date of this response as reported by the server.
+         */
         public long serverDate;
 
-        /** The last modified date for the requested object. */
+        /**
+         * The last modified date for the requested object.
+         */
         public long lastModified;
 
-        /** TTL for this record. */
+        /**
+         * TTL for this record.
+         */
         public long ttl;
 
-        /** Soft TTL for this record. */
+        /**
+         * Soft TTL for this record.
+         */
         public long softTtl;
 
         /**
@@ -100,13 +121,19 @@ public interface Cache {
          */
         public List<Header> allResponseHeaders;
 
-        /** True if the entry is expired. */
-        public boolean isExpired() {
+        /**
+         * True if the entry is expired.
+         */
+        public boolean isExpired()
+        {
             return this.ttl < System.currentTimeMillis();
         }
 
-        /** True if a refresh is needed from the original data source. */
-        public boolean refreshNeeded() {
+        /**
+         * True if a refresh is needed from the original data source.
+         */
+        public boolean refreshNeeded()
+        {
             return this.softTtl < System.currentTimeMillis();
         }
     }

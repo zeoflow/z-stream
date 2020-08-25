@@ -18,9 +18,11 @@ package com.zeoflow.z.stream.toolbox;
 
 import androidx.annotation.Nullable;
 import androidx.annotation.RestrictTo;
+
 import com.zeoflow.z.stream.AuthFailureError;
 import com.zeoflow.z.stream.Request;
-import com.zeoflow.z.stream.VolleyLog;
+import com.zeoflow.z.stream.ZStreamLog;
+
 import java.io.IOException;
 import java.io.InterruptedIOException;
 import java.util.Map;
@@ -28,40 +30,31 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.atomic.AtomicReference;
 
-/** Asynchronous extension of the {@link BaseHttpStack} class. */
-public abstract class AsyncHttpStack extends BaseHttpStack {
+/**
+ * Asynchronous extension of the {@link BaseHttpStack} class.
+ */
+public abstract class AsyncHttpStack extends BaseHttpStack
+{
     private ExecutorService mBlockingExecutor;
     private ExecutorService mNonBlockingExecutor;
-
-    public interface OnRequestComplete {
-        /** Invoked when the stack successfully completes a request. */
-        void onSuccess(HttpResponse httpResponse);
-
-        /** Invoked when the stack throws an {@link AuthFailureError} during a request. */
-        void onAuthError(AuthFailureError authFailureError);
-
-        /** Invoked when the stack throws an {@link IOException} during a request. */
-        void onError(IOException ioException);
-    }
 
     /**
      * Makes an HTTP request with the given parameters, and calls the {@link OnRequestComplete}
      * callback, with either the {@link HttpResponse} or error that was thrown.
      *
-     * @param request to perform
+     * @param request           to perform
      * @param additionalHeaders to be sent together with {@link Request#getHeaders()}
-     * @param callback to be called after retrieving the {@link HttpResponse} or throwing an error.
+     * @param callback          to be called after retrieving the {@link HttpResponse} or throwing an error.
      */
     public abstract void executeRequest(
             Request<?> request, Map<String, String> additionalHeaders, OnRequestComplete callback);
 
     /**
-     * This method sets the non blocking executor to be used by the stack for non-blocking tasks.
-     * This method must be called before executing any requests.
+     * Gets blocking executor to perform any potentially blocking tasks.
      */
-    @RestrictTo({RestrictTo.Scope.LIBRARY_GROUP})
-    public void setNonBlockingExecutor(ExecutorService executor) {
-        mNonBlockingExecutor = executor;
+    protected ExecutorService getBlockingExecutor()
+    {
+        return mBlockingExecutor;
     }
 
     /**
@@ -69,42 +62,54 @@ public abstract class AsyncHttpStack extends BaseHttpStack {
      * tasks. This method must be called before executing any requests.
      */
     @RestrictTo({RestrictTo.Scope.LIBRARY_GROUP})
-    public void setBlockingExecutor(ExecutorService executor) {
+    public void setBlockingExecutor(ExecutorService executor)
+    {
         mBlockingExecutor = executor;
     }
 
-    /** Gets blocking executor to perform any potentially blocking tasks. */
-    protected ExecutorService getBlockingExecutor() {
-        return mBlockingExecutor;
+    /**
+     * Gets non-blocking executor to perform any non-blocking tasks.
+     */
+    protected ExecutorService getNonBlockingExecutor()
+    {
+        return mNonBlockingExecutor;
     }
 
-    /** Gets non-blocking executor to perform any non-blocking tasks. */
-    protected ExecutorService getNonBlockingExecutor() {
-        return mNonBlockingExecutor;
+    /**
+     * This method sets the non blocking executor to be used by the stack for non-blocking tasks.
+     * This method must be called before executing any requests.
+     */
+    @RestrictTo({RestrictTo.Scope.LIBRARY_GROUP})
+    public void setNonBlockingExecutor(ExecutorService executor)
+    {
+        mNonBlockingExecutor = executor;
     }
 
     /**
      * Performs an HTTP request with the given parameters.
      *
-     * @param request the request to perform
+     * @param request           the request to perform
      * @param additionalHeaders additional headers to be sent together with {@link
-     *     Request#getHeaders()}
+     *                          Request#getHeaders()}
      * @return the {@link HttpResponse}
-     * @throws IOException if an I/O error occurs during the request
+     * @throws IOException      if an I/O error occurs during the request
      * @throws AuthFailureError if an authentication failure occurs during the request
      */
     @Override
     public final HttpResponse executeRequest(
             Request<?> request, Map<String, String> additionalHeaders)
-            throws IOException, AuthFailureError {
+            throws IOException, AuthFailureError
+    {
         final CountDownLatch latch = new CountDownLatch(1);
         final AtomicReference<Response> entry = new AtomicReference<>();
         executeRequest(
                 request,
                 additionalHeaders,
-                new OnRequestComplete() {
+                new OnRequestComplete()
+                {
                     @Override
-                    public void onSuccess(HttpResponse httpResponse) {
+                    public void onSuccess(HttpResponse httpResponse)
+                    {
                         Response response =
                                 new Response(
                                         httpResponse,
@@ -115,7 +120,8 @@ public abstract class AsyncHttpStack extends BaseHttpStack {
                     }
 
                     @Override
-                    public void onAuthError(AuthFailureError authFailureError) {
+                    public void onAuthError(AuthFailureError authFailureError)
+                    {
                         Response response =
                                 new Response(
                                         /* httpResponse= */ null,
@@ -126,7 +132,8 @@ public abstract class AsyncHttpStack extends BaseHttpStack {
                     }
 
                     @Override
-                    public void onError(IOException ioException) {
+                    public void onError(IOException ioException)
+                    {
                         Response response =
                                 new Response(
                                         /* httpResponse= */ null,
@@ -136,24 +143,48 @@ public abstract class AsyncHttpStack extends BaseHttpStack {
                         latch.countDown();
                     }
                 });
-        try {
+        try
+        {
             latch.await();
-        } catch (InterruptedException e) {
-            VolleyLog.e(e, "while waiting for CountDownLatch");
+        } catch (InterruptedException e)
+        {
+            ZStreamLog.e(e, "while waiting for CountDownLatch");
             Thread.currentThread().interrupt();
             throw new InterruptedIOException(e.toString());
         }
         Response response = entry.get();
-        if (response.httpResponse != null) {
+        if (response.httpResponse != null)
+        {
             return response.httpResponse;
-        } else if (response.ioException != null) {
+        } else if (response.ioException != null)
+        {
             throw response.ioException;
-        } else {
+        } else
+        {
             throw response.authFailureError;
         }
     }
 
-    private static class Response {
+    public interface OnRequestComplete
+    {
+        /**
+         * Invoked when the stack successfully completes a request.
+         */
+        void onSuccess(HttpResponse httpResponse);
+
+        /**
+         * Invoked when the stack throws an {@link AuthFailureError} during a request.
+         */
+        void onAuthError(AuthFailureError authFailureError);
+
+        /**
+         * Invoked when the stack throws an {@link IOException} during a request.
+         */
+        void onError(IOException ioException);
+    }
+
+    private static class Response
+    {
         HttpResponse httpResponse;
         IOException ioException;
         AuthFailureError authFailureError;
@@ -161,7 +192,8 @@ public abstract class AsyncHttpStack extends BaseHttpStack {
         private Response(
                 @Nullable HttpResponse httpResponse,
                 @Nullable IOException ioException,
-                @Nullable AuthFailureError authFailureError) {
+                @Nullable AuthFailureError authFailureError)
+        {
             this.httpResponse = httpResponse;
             this.ioException = ioException;
             this.authFailureError = authFailureError;

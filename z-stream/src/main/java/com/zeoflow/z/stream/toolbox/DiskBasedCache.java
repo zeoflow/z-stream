@@ -17,9 +17,12 @@
 package com.zeoflow.z.stream.toolbox;
 
 import android.text.TextUtils;
+
 import androidx.annotation.VisibleForTesting;
+
 import com.zeoflow.z.stream.Cache;
-import com.zeoflow.z.stream.VolleyLog;
+import com.zeoflow.z.stream.ZStreamLog;
+
 import java.io.BufferedInputStream;
 import java.io.BufferedOutputStream;
 import java.io.DataInputStream;
@@ -40,33 +43,42 @@ import java.util.Map;
  *
  * <p>This cache supports the {@link Entry#allResponseHeaders} headers field.
  */
-public class DiskBasedCache implements Cache {
+public class DiskBasedCache implements Cache
+{
 
-    /** Map of the Key, CacheHeader pairs */
+    /**
+     * Map of the Key, CacheHeader pairs
+     */
     private final Map<String, CacheHeader> mEntries = new LinkedHashMap<>(16, .75f, true);
-
-    /** Total amount of space currently used by the cache in bytes. */
-    private long mTotalSize = 0;
-
-    /** The supplier for the root directory to use for the cache. */
+    /**
+     * The supplier for the root directory to use for the cache.
+     */
     private final FileSupplier mRootDirectorySupplier;
-
-    /** The maximum size of the cache in bytes. */
+    /**
+     * The maximum size of the cache in bytes.
+     */
     private final int mMaxCacheSizeInBytes;
+    /**
+     * Total amount of space currently used by the cache in bytes.
+     */
+    private long mTotalSize = 0;
 
     /**
      * Constructs an instance of the DiskBasedCache at the specified directory.
      *
-     * @param rootDirectory The root directory of the cache.
+     * @param rootDirectory       The root directory of the cache.
      * @param maxCacheSizeInBytes The maximum size of the cache in bytes. Note that the cache may
-     *     briefly exceed this size on disk when writing a new entry that pushes it over the limit
-     *     until the ensuing pruning completes.
+     *                            briefly exceed this size on disk when writing a new entry that pushes it over the limit
+     *                            until the ensuing pruning completes.
      */
-    public DiskBasedCache(final File rootDirectory, int maxCacheSizeInBytes) {
+    public DiskBasedCache(final File rootDirectory, int maxCacheSizeInBytes)
+    {
         mRootDirectorySupplier =
-                new FileSupplier() {
+                new FileSupplier()
+                {
                     @Override
-                    public File get() {
+                    public File get()
+                    {
                         return rootDirectory;
                     }
                 };
@@ -77,11 +89,12 @@ public class DiskBasedCache implements Cache {
      * Constructs an instance of the DiskBasedCache at the specified directory.
      *
      * @param rootDirectorySupplier The supplier for the root directory of the cache.
-     * @param maxCacheSizeInBytes The maximum size of the cache in bytes. Note that the cache may
-     *     briefly exceed this size on disk when writing a new entry that pushes it over the limit
-     *     until the ensuing pruning completes.
+     * @param maxCacheSizeInBytes   The maximum size of the cache in bytes. Note that the cache may
+     *                              briefly exceed this size on disk when writing a new entry that pushes it over the limit
+     *                              until the ensuing pruning completes.
      */
-    public DiskBasedCache(FileSupplier rootDirectorySupplier, int maxCacheSizeInBytes) {
+    public DiskBasedCache(FileSupplier rootDirectorySupplier, int maxCacheSizeInBytes)
+    {
         mRootDirectorySupplier = rootDirectorySupplier;
         mMaxCacheSizeInBytes = maxCacheSizeInBytes;
     }
@@ -92,7 +105,8 @@ public class DiskBasedCache implements Cache {
      *
      * @param rootDirectory The root directory of the cache.
      */
-    public DiskBasedCache(File rootDirectory) {
+    public DiskBasedCache(File rootDirectory)
+    {
         this(rootDirectory, DiskBasedCacheUtility.DEFAULT_DISK_USAGE_BYTES);
     }
 
@@ -102,42 +116,75 @@ public class DiskBasedCache implements Cache {
      *
      * @param rootDirectorySupplier The supplier for the root directory of the cache.
      */
-    public DiskBasedCache(FileSupplier rootDirectorySupplier) {
+    public DiskBasedCache(FileSupplier rootDirectorySupplier)
+    {
         this(rootDirectorySupplier, DiskBasedCacheUtility.DEFAULT_DISK_USAGE_BYTES);
     }
 
-    /** Clears the cache. Deletes all cached files from disk. */
+    /**
+     * Reads length bytes from CountingInputStream into byte array.
+     *
+     * @param cis    input stream
+     * @param length number of bytes to read
+     * @throws IOException if fails to read all bytes
+     */
+    static byte[] streamToBytes(CountingInputStream cis, long length) throws IOException
+    {
+        long maxLength = cis.bytesRemaining();
+        // Length cannot be negative or greater than bytes remaining, and must not overflow int.
+        if (length < 0 || length > maxLength || (int) length != length)
+        {
+            throw new IOException("streamToBytes length=" + length + ", maxLength=" + maxLength);
+        }
+        byte[] bytes = new byte[(int) length];
+        new DataInputStream(cis).readFully(bytes);
+        return bytes;
+    }
+
+    /**
+     * Clears the cache. Deletes all cached files from disk.
+     */
     @Override
-    public synchronized void clear() {
+    public synchronized void clear()
+    {
         File[] files = mRootDirectorySupplier.get().listFiles();
-        if (files != null) {
-            for (File file : files) {
+        if (files != null)
+        {
+            for (File file : files)
+            {
                 file.delete();
             }
         }
         mEntries.clear();
         mTotalSize = 0;
-        VolleyLog.d("Cache cleared.");
+        ZStreamLog.d("Cache cleared.");
     }
 
-    /** Returns the cache entry with the specified key if it exists, null otherwise. */
+    /**
+     * Returns the cache entry with the specified key if it exists, null otherwise.
+     */
     @Override
-    public synchronized Entry get(String key) {
+    public synchronized Entry get(String key)
+    {
         CacheHeader entry = mEntries.get(key);
         // if the entry does not exist, return.
-        if (entry == null) {
+        if (entry == null)
+        {
             return null;
         }
         File file = DiskBasedCacheUtility.getFileForKey(key, mRootDirectorySupplier);
-        try {
+        try
+        {
             CountingInputStream cis =
                     new CountingInputStream(
                             new BufferedInputStream(createInputStream(file)), file.length());
-            try {
+            try
+            {
                 CacheHeader entryOnDisk = CacheHeader.readHeader(cis);
-                if (!TextUtils.equals(key, entryOnDisk.key)) {
+                if (!TextUtils.equals(key, entryOnDisk.key))
+                {
                     // File was shared by two keys and now holds data for a different entry!
-                    VolleyLog.d(
+                    ZStreamLog.d(
                             "%s: key=%s, found=%s", file.getAbsolutePath(), key, entryOnDisk.key);
                     // Remove key whose contents on disk have been replaced.
                     mTotalSize = DiskBasedCacheUtility.removeEntry(key, mTotalSize, mEntries);
@@ -145,13 +192,15 @@ public class DiskBasedCache implements Cache {
                 }
                 byte[] data = streamToBytes(cis, cis.bytesRemaining());
                 return entry.toCacheEntry(data);
-            } finally {
+            } finally
+            {
                 // Any IOException thrown here is handled by the below catch block by design.
                 //noinspection ThrowFromFinallyBlock
                 cis.close();
             }
-        } catch (IOException e) {
-            VolleyLog.d("%s: %s", file.getAbsolutePath(), e.toString());
+        } catch (IOException e)
+        {
+            ZStreamLog.d("%s: %s", file.getAbsolutePath(), e.toString());
             remove(key);
             return null;
         }
@@ -162,35 +211,44 @@ public class DiskBasedCache implements Cache {
      * directory. Creates the root directory if necessary.
      */
     @Override
-    public synchronized void initialize() {
+    public synchronized void initialize()
+    {
         File rootDirectory = mRootDirectorySupplier.get();
-        if (!rootDirectory.exists()) {
-            if (!rootDirectory.mkdirs()) {
-                VolleyLog.e("Unable to create cache dir %s", rootDirectory.getAbsolutePath());
+        if (!rootDirectory.exists())
+        {
+            if (!rootDirectory.mkdirs())
+            {
+                ZStreamLog.e("Unable to create cache dir %s", rootDirectory.getAbsolutePath());
             }
             return;
         }
         File[] files = rootDirectory.listFiles();
-        if (files == null) {
+        if (files == null)
+        {
             return;
         }
-        for (File file : files) {
-            try {
+        for (File file : files)
+        {
+            try
+            {
                 long entrySize = file.length();
                 CountingInputStream cis =
                         new CountingInputStream(
                                 new BufferedInputStream(createInputStream(file)), entrySize);
-                try {
+                try
+                {
                     CacheHeader entry = CacheHeader.readHeader(cis);
                     entry.size = entrySize;
                     mTotalSize =
                             DiskBasedCacheUtility.putEntry(entry.key, entry, mTotalSize, mEntries);
-                } finally {
+                } finally
+                {
                     // Any IOException thrown here is handled by the below catch block by design.
                     //noinspection ThrowFromFinallyBlock
                     cis.close();
                 }
-            } catch (IOException e) {
+            } catch (IOException e)
+            {
                 //noinspection ResultOfMethodCallIgnored
                 file.delete();
             }
@@ -200,37 +258,46 @@ public class DiskBasedCache implements Cache {
     /**
      * Invalidates an entry in the cache.
      *
-     * @param key Cache key
+     * @param key        Cache key
      * @param fullExpire True to fully expire the entry, false to soft expire
      */
     @Override
-    public synchronized void invalidate(String key, boolean fullExpire) {
+    public synchronized void invalidate(String key, boolean fullExpire)
+    {
         Entry entry = get(key);
-        if (entry != null) {
+        if (entry != null)
+        {
             entry.softTtl = 0;
-            if (fullExpire) {
+            if (fullExpire)
+            {
                 entry.ttl = 0;
             }
             put(key, entry);
         }
     }
 
-    /** Puts the entry with the specified key into the cache. */
+    /**
+     * Puts the entry with the specified key into the cache.
+     */
     @Override
-    public synchronized void put(String key, Entry entry) {
+    public synchronized void put(String key, Entry entry)
+    {
         if (DiskBasedCacheUtility.wouldBePruned(
-                mTotalSize, entry.data.length, mMaxCacheSizeInBytes)) {
+                mTotalSize, entry.data.length, mMaxCacheSizeInBytes))
+        {
             return;
         }
 
         File file = DiskBasedCacheUtility.getFileForKey(key, mRootDirectorySupplier);
-        try {
+        try
+        {
             BufferedOutputStream fos = new BufferedOutputStream(createOutputStream(file));
             CacheHeader e = new CacheHeader(key, entry);
             boolean success = e.writeHeader(fos);
-            if (!success) {
+            if (!success)
+            {
                 fos.close();
-                VolleyLog.d("Failed to write header for %s", file.getAbsolutePath());
+                ZStreamLog.d("Failed to write header for %s", file.getAbsolutePath());
                 throw new IOException();
             }
             fos.write(entry.data);
@@ -240,107 +307,116 @@ public class DiskBasedCache implements Cache {
             mTotalSize =
                     DiskBasedCacheUtility.pruneIfNeeded(
                             mTotalSize, mMaxCacheSizeInBytes, mEntries, mRootDirectorySupplier);
-        } catch (IOException e) {
+        } catch (IOException e)
+        {
             boolean deleted = file.delete();
-            if (!deleted) {
-                VolleyLog.d("Could not clean up file %s", file.getAbsolutePath());
+            if (!deleted)
+            {
+                ZStreamLog.d("Could not clean up file %s", file.getAbsolutePath());
             }
             initializeIfRootDirectoryDeleted();
         }
     }
 
-    /** Removes the specified key from the cache if it exists. */
+    /**
+     * Removes the specified key from the cache if it exists.
+     */
     @Override
-    public synchronized void remove(String key) {
+    public synchronized void remove(String key)
+    {
         boolean deleted = DiskBasedCacheUtility.getFileForKey(key, mRootDirectorySupplier).delete();
         mTotalSize = DiskBasedCacheUtility.removeEntry(key, mTotalSize, mEntries);
-        if (!deleted) {
-            VolleyLog.d(
+        if (!deleted)
+        {
+            ZStreamLog.d(
                     "Could not delete cache entry for key=%s, filename=%s",
                     key, DiskBasedCacheUtility.getFilenameForKey(key));
         }
     }
 
-    /** Represents a supplier for {@link File}s. */
-    public interface FileSupplier extends com.zeoflow.z.stream.toolbox.FileSupplier {}
-
-    /** Returns a file object for the given cache key. */
-    public File getFileForKey(String key) {
+    /**
+     * Returns a file object for the given cache key.
+     */
+    public File getFileForKey(String key)
+    {
         return new File(mRootDirectorySupplier.get(), DiskBasedCacheUtility.getFilenameForKey(key));
     }
 
-    /** Re-initialize the cache if the directory was deleted. */
-    private void initializeIfRootDirectoryDeleted() {
-        if (!mRootDirectorySupplier.get().exists()) {
-            VolleyLog.d("Re-initializing cache after external clearing.");
+    /**
+     * Re-initialize the cache if the directory was deleted.
+     */
+    private void initializeIfRootDirectoryDeleted()
+    {
+        if (!mRootDirectorySupplier.get().exists())
+        {
+            ZStreamLog.d("Re-initializing cache after external clearing.");
             mEntries.clear();
             mTotalSize = 0;
             initialize();
         }
     }
 
-    /**
-     * Reads length bytes from CountingInputStream into byte array.
-     *
-     * @param cis input stream
-     * @param length number of bytes to read
-     * @throws IOException if fails to read all bytes
-     */
-    static byte[] streamToBytes(CountingInputStream cis, long length) throws IOException {
-        long maxLength = cis.bytesRemaining();
-        // Length cannot be negative or greater than bytes remaining, and must not overflow int.
-        if (length < 0 || length > maxLength || (int) length != length) {
-            throw new IOException("streamToBytes length=" + length + ", maxLength=" + maxLength);
-        }
-        byte[] bytes = new byte[(int) length];
-        new DataInputStream(cis).readFully(bytes);
-        return bytes;
-    }
-
     @VisibleForTesting
-    InputStream createInputStream(File file) throws FileNotFoundException {
+    InputStream createInputStream(File file) throws FileNotFoundException
+    {
         return new FileInputStream(file);
     }
 
     @VisibleForTesting
-    OutputStream createOutputStream(File file) throws FileNotFoundException {
+    OutputStream createOutputStream(File file) throws FileNotFoundException
+    {
         return new FileOutputStream(file);
     }
 
+    /**
+     * Represents a supplier for {@link File}s.
+     */
+    public interface FileSupplier extends com.zeoflow.z.stream.toolbox.FileSupplier
+    {
+    }
+
     @VisibleForTesting
-    static class CountingInputStream extends FilterInputStream {
+    static class CountingInputStream extends FilterInputStream
+    {
         private final long length;
         private long bytesRead;
 
-        CountingInputStream(InputStream in, long length) {
+        CountingInputStream(InputStream in, long length)
+        {
             super(in);
             this.length = length;
         }
 
         @Override
-        public int read() throws IOException {
+        public int read() throws IOException
+        {
             int result = super.read();
-            if (result != -1) {
+            if (result != -1)
+            {
                 bytesRead++;
             }
             return result;
         }
 
         @Override
-        public int read(byte[] buffer, int offset, int count) throws IOException {
+        public int read(byte[] buffer, int offset, int count) throws IOException
+        {
             int result = super.read(buffer, offset, count);
-            if (result != -1) {
+            if (result != -1)
+            {
                 bytesRead += result;
             }
             return result;
         }
 
         @VisibleForTesting
-        long bytesRead() {
+        long bytesRead()
+        {
             return bytesRead;
         }
 
-        long bytesRemaining() {
+        long bytesRemaining()
+        {
             return length - bytesRead;
         }
     }

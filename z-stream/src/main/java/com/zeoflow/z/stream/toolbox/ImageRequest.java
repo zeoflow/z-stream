@@ -20,41 +20,52 @@ import android.graphics.Bitmap;
 import android.graphics.Bitmap.Config;
 import android.graphics.BitmapFactory;
 import android.widget.ImageView.ScaleType;
+
 import androidx.annotation.GuardedBy;
 import androidx.annotation.Nullable;
 import androidx.annotation.VisibleForTesting;
+
 import com.zeoflow.z.stream.DefaultRetryPolicy;
 import com.zeoflow.z.stream.NetworkResponse;
 import com.zeoflow.z.stream.ParseError;
 import com.zeoflow.z.stream.Request;
 import com.zeoflow.z.stream.Response;
-import com.zeoflow.z.stream.VolleyLog;
+import com.zeoflow.z.stream.ZStreamLog;
 
-/** A canned request for getting an image at a given URL and calling back with a decoded Bitmap. */
-public class ImageRequest extends Request<Bitmap> {
-    /** Socket timeout in milliseconds for image requests */
+/**
+ * A canned request for getting an image at a given URL and calling back with a decoded Bitmap.
+ */
+public class ImageRequest extends Request<Bitmap>
+{
+    /**
+     * Socket timeout in milliseconds for image requests
+     */
     public static final int DEFAULT_IMAGE_TIMEOUT_MS = 1000;
 
-    /** Default number of retries for image requests */
+    /**
+     * Default number of retries for image requests
+     */
     public static final int DEFAULT_IMAGE_MAX_RETRIES = 2;
 
-    /** Default backoff multiplier for image requests */
+    /**
+     * Default backoff multiplier for image requests
+     */
     public static final float DEFAULT_IMAGE_BACKOFF_MULT = 2f;
-
-    /** Lock to guard mListener as it is cleared on cancel() and read on delivery. */
+    /**
+     * Decoding lock so that we don't decode more than one image at a time (to avoid OOM's)
+     */
+    private static final Object sDecodeLock = new Object();
+    /**
+     * Lock to guard mListener as it is cleared on cancel() and read on delivery.
+     */
     private final Object mLock = new Object();
-
-    @GuardedBy("mLock")
-    @Nullable
-    private Response.Listener<Bitmap> mListener;
-
     private final Config mDecodeConfig;
     private final int mMaxWidth;
     private final int mMaxHeight;
     private final ScaleType mScaleType;
-
-    /** Decoding lock so that we don't decode more than one image at a time (to avoid OOM's) */
-    private static final Object sDecodeLock = new Object();
+    @GuardedBy("mLock")
+    @Nullable
+    private Response.Listener<Bitmap> mListener;
 
     /**
      * Creates a new image request, decoding to a maximum specified width and height. If both width
@@ -63,12 +74,12 @@ public class ImageRequest extends Request<Bitmap> {
      * aspect ratio. If both width and height are nonzero, the image will be decoded to be fit in
      * the rectangle of dimensions width x height while keeping its aspect ratio.
      *
-     * @param url URL of the image
-     * @param listener Listener to receive the decoded bitmap
-     * @param maxWidth Maximum width to decode this bitmap to, or zero for none
-     * @param maxHeight Maximum height to decode this bitmap to, or zero for none
-     * @param scaleType The ImageViews ScaleType used to calculate the needed image size.
-     * @param decodeConfig Format to decode the bitmap to
+     * @param url           URL of the image
+     * @param listener      Listener to receive the decoded bitmap
+     * @param maxWidth      Maximum width to decode this bitmap to, or zero for none
+     * @param maxHeight     Maximum height to decode this bitmap to, or zero for none
+     * @param scaleType     The ImageViews ScaleType used to calculate the needed image size.
+     * @param decodeConfig  Format to decode the bitmap to
      * @param errorListener Error listener, or null to ignore errors
      */
     public ImageRequest(
@@ -78,7 +89,8 @@ public class ImageRequest extends Request<Bitmap> {
             int maxHeight,
             ScaleType scaleType,
             Config decodeConfig,
-            @Nullable Response.ErrorListener errorListener) {
+            @Nullable Response.ErrorListener errorListener)
+    {
         super(Method.GET, url, errorListener);
         setRetryPolicy(
                 new DefaultRetryPolicy(
@@ -103,7 +115,8 @@ public class ImageRequest extends Request<Bitmap> {
             int maxWidth,
             int maxHeight,
             Config decodeConfig,
-            Response.ErrorListener errorListener) {
+            Response.ErrorListener errorListener)
+    {
         this(
                 url,
                 listener,
@@ -114,49 +127,50 @@ public class ImageRequest extends Request<Bitmap> {
                 errorListener);
     }
 
-    @Override
-    public Priority getPriority() {
-        return Priority.LOW;
-    }
-
     /**
      * Scales one side of a rectangle to fit aspect ratio.
      *
-     * @param maxPrimary Maximum size of the primary dimension (i.e. width for max width), or zero
-     *     to maintain aspect ratio with secondary dimension
-     * @param maxSecondary Maximum size of the secondary dimension, or zero to maintain aspect ratio
-     *     with primary dimension
-     * @param actualPrimary Actual size of the primary dimension
+     * @param maxPrimary      Maximum size of the primary dimension (i.e. width for max width), or zero
+     *                        to maintain aspect ratio with secondary dimension
+     * @param maxSecondary    Maximum size of the secondary dimension, or zero to maintain aspect ratio
+     *                        with primary dimension
+     * @param actualPrimary   Actual size of the primary dimension
      * @param actualSecondary Actual size of the secondary dimension
-     * @param scaleType The ScaleType used to calculate the needed image size.
+     * @param scaleType       The ScaleType used to calculate the needed image size.
      */
     private static int getResizedDimension(
             int maxPrimary,
             int maxSecondary,
             int actualPrimary,
             int actualSecondary,
-            ScaleType scaleType) {
+            ScaleType scaleType)
+    {
 
         // If no dominant value at all, just return the actual.
-        if ((maxPrimary == 0) && (maxSecondary == 0)) {
+        if ((maxPrimary == 0) && (maxSecondary == 0))
+        {
             return actualPrimary;
         }
 
         // If ScaleType.FIT_XY fill the whole rectangle, ignore ratio.
-        if (scaleType == ScaleType.FIT_XY) {
-            if (maxPrimary == 0) {
+        if (scaleType == ScaleType.FIT_XY)
+        {
+            if (maxPrimary == 0)
+            {
                 return actualPrimary;
             }
             return maxPrimary;
         }
 
         // If primary is unspecified, scale primary to match secondary's scaling ratio.
-        if (maxPrimary == 0) {
+        if (maxPrimary == 0)
+        {
             double ratio = (double) maxSecondary / (double) actualSecondary;
             return (int) (actualPrimary * ratio);
         }
 
-        if (maxSecondary == 0) {
+        if (maxSecondary == 0)
+        {
             return maxPrimary;
         }
 
@@ -164,41 +178,84 @@ public class ImageRequest extends Request<Bitmap> {
         int resized = maxPrimary;
 
         // If ScaleType.CENTER_CROP fill the whole rectangle, preserve aspect ratio.
-        if (scaleType == ScaleType.CENTER_CROP) {
-            if ((resized * ratio) < maxSecondary) {
+        if (scaleType == ScaleType.CENTER_CROP)
+        {
+            if ((resized * ratio) < maxSecondary)
+            {
                 resized = (int) (maxSecondary / ratio);
             }
             return resized;
         }
 
-        if ((resized * ratio) > maxSecondary) {
+        if ((resized * ratio) > maxSecondary)
+        {
             resized = (int) (maxSecondary / ratio);
         }
         return resized;
     }
 
+    /**
+     * Returns the largest power-of-two divisor for use in downscaling a bitmap that will not result
+     * in the scaling past the desired dimensions.
+     *
+     * @param actualWidth   Actual width of the bitmap
+     * @param actualHeight  Actual height of the bitmap
+     * @param desiredWidth  Desired width of the bitmap
+     * @param desiredHeight Desired height of the bitmap
+     */
+    @VisibleForTesting
+    static int findBestSampleSize(
+            int actualWidth, int actualHeight, int desiredWidth, int desiredHeight)
+    {
+        double wr = (double) actualWidth / desiredWidth;
+        double hr = (double) actualHeight / desiredHeight;
+        double ratio = Math.min(wr, hr);
+        float n = 1.0f;
+        while ((n * 2) <= ratio)
+        {
+            n *= 2;
+        }
+
+        return (int) n;
+    }
+
     @Override
-    protected Response<Bitmap> parseNetworkResponse(NetworkResponse response) {
+    public Priority getPriority()
+    {
+        return Priority.LOW;
+    }
+
+    @Override
+    protected Response<Bitmap> parseNetworkResponse(NetworkResponse response)
+    {
         // Serialize all decode on a global lock to reduce concurrent heap usage.
-        synchronized (sDecodeLock) {
-            try {
+        synchronized (sDecodeLock)
+        {
+            try
+            {
                 return doParse(response);
-            } catch (OutOfMemoryError e) {
-                VolleyLog.e("Caught OOM for %d byte image, url=%s", response.data.length, getUrl());
+            } catch (OutOfMemoryError e)
+            {
+                ZStreamLog.e("Caught OOM for %d byte image, url=%s", response.data.length, getUrl());
                 return Response.error(new ParseError(e));
             }
         }
     }
 
-    /** The real guts of parseNetworkResponse. Broken out for readability. */
-    private Response<Bitmap> doParse(NetworkResponse response) {
+    /**
+     * The real guts of parseNetworkResponse. Broken out for readability.
+     */
+    private Response<Bitmap> doParse(NetworkResponse response)
+    {
         byte[] data = response.data;
         BitmapFactory.Options decodeOptions = new BitmapFactory.Options();
         Bitmap bitmap = null;
-        if (mMaxWidth == 0 && mMaxHeight == 0) {
+        if (mMaxWidth == 0 && mMaxHeight == 0)
+        {
             decodeOptions.inPreferredConfig = mDecodeConfig;
             bitmap = BitmapFactory.decodeByteArray(data, 0, data.length, decodeOptions);
-        } else {
+        } else
+        {
             // If we have to resize this image, first get the natural bounds.
             decodeOptions.inJustDecodeBounds = true;
             BitmapFactory.decodeByteArray(data, 0, data.length, decodeOptions);
@@ -224,60 +281,46 @@ public class ImageRequest extends Request<Bitmap> {
             // If necessary, scale down to the maximal acceptable size.
             if (tempBitmap != null
                     && (tempBitmap.getWidth() > desiredWidth
-                            || tempBitmap.getHeight() > desiredHeight)) {
+                    || tempBitmap.getHeight() > desiredHeight))
+            {
                 bitmap = Bitmap.createScaledBitmap(tempBitmap, desiredWidth, desiredHeight, true);
                 tempBitmap.recycle();
-            } else {
+            } else
+            {
                 bitmap = tempBitmap;
             }
         }
 
-        if (bitmap == null) {
+        if (bitmap == null)
+        {
             return Response.error(new ParseError(response));
-        } else {
+        } else
+        {
             return Response.success(bitmap, HttpHeaderParser.parseCacheHeaders(response));
         }
     }
 
     @Override
-    public void cancel() {
+    public void cancel()
+    {
         super.cancel();
-        synchronized (mLock) {
+        synchronized (mLock)
+        {
             mListener = null;
         }
     }
 
     @Override
-    protected void deliverResponse(Bitmap response) {
+    protected void deliverResponse(Bitmap response)
+    {
         Response.Listener<Bitmap> listener;
-        synchronized (mLock) {
+        synchronized (mLock)
+        {
             listener = mListener;
         }
-        if (listener != null) {
+        if (listener != null)
+        {
             listener.onResponse(response);
         }
-    }
-
-    /**
-     * Returns the largest power-of-two divisor for use in downscaling a bitmap that will not result
-     * in the scaling past the desired dimensions.
-     *
-     * @param actualWidth Actual width of the bitmap
-     * @param actualHeight Actual height of the bitmap
-     * @param desiredWidth Desired width of the bitmap
-     * @param desiredHeight Desired height of the bitmap
-     */
-    @VisibleForTesting
-    static int findBestSampleSize(
-            int actualWidth, int actualHeight, int desiredWidth, int desiredHeight) {
-        double wr = (double) actualWidth / desiredWidth;
-        double hr = (double) actualHeight / desiredHeight;
-        double ratio = Math.min(wr, hr);
-        float n = 1.0f;
-        while ((n * 2) <= ratio) {
-            n *= 2;
-        }
-
-        return (int) n;
     }
 }

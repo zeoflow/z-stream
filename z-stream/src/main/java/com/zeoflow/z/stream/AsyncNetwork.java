@@ -17,34 +17,31 @@
 package com.zeoflow.z.stream;
 
 import androidx.annotation.RestrictTo;
+
 import com.zeoflow.z.stream.toolbox.AsyncHttpStack;
+
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.atomic.AtomicReference;
 
-/** An asynchronous implementation of {@link Network} to perform requests. */
-public abstract class AsyncNetwork implements Network {
+/**
+ * An asynchronous implementation of {@link Network} to perform requests.
+ */
+public abstract class AsyncNetwork implements Network
+{
     private final AsyncHttpStack mAsyncStack;
     private ExecutorService mBlockingExecutor;
     private ExecutorService mNonBlockingExecutor;
 
-    protected AsyncNetwork(AsyncHttpStack stack) {
+    protected AsyncNetwork(AsyncHttpStack stack)
+    {
         mAsyncStack = stack;
-    }
-
-    /** Interface for callback to be called after request is processed. */
-    public interface OnRequestComplete {
-        /** Method to be called after successful network request. */
-        void onSuccess(NetworkResponse networkResponse);
-
-        /** Method to be called after unsuccessful network request. */
-        void onError(VolleyError volleyError);
     }
 
     /**
      * Non-blocking method to perform the specified request.
      *
-     * @param request Request to process
+     * @param request  Request to process
      * @param callback to be called once NetworkResponse is received
      */
     public abstract void performRequest(Request<?> request, OnRequestComplete callback);
@@ -54,53 +51,60 @@ public abstract class AsyncNetwork implements Network {
      *
      * @param request Request to process
      * @return response retrieved from the network
-     * @throws VolleyError in the event of an error
+     * @throws ZStreamError in the event of an error
      */
     @Override
-    public NetworkResponse performRequest(Request<?> request) throws VolleyError {
+    public NetworkResponse performRequest(Request<?> request) throws ZStreamError
+    {
         final CountDownLatch latch = new CountDownLatch(1);
         final AtomicReference<NetworkResponse> response = new AtomicReference<>();
-        final AtomicReference<VolleyError> error = new AtomicReference<>();
+        final AtomicReference<ZStreamError> error = new AtomicReference<>();
         performRequest(
                 request,
-                new OnRequestComplete() {
+                new OnRequestComplete()
+                {
                     @Override
-                    public void onSuccess(NetworkResponse networkResponse) {
+                    public void onSuccess(NetworkResponse networkResponse)
+                    {
                         response.set(networkResponse);
                         latch.countDown();
                     }
 
                     @Override
-                    public void onError(VolleyError volleyError) {
-                        error.set(volleyError);
+                    public void onError(ZStreamError zstreamError)
+                    {
+                        error.set(zstreamError);
                         latch.countDown();
                     }
                 });
-        try {
+        try
+        {
             latch.await();
-        } catch (InterruptedException e) {
-            VolleyLog.e(e, "while waiting for CountDownLatch");
+        } catch (InterruptedException e)
+        {
+            ZStreamLog.e(e, "while waiting for CountDownLatch");
             Thread.currentThread().interrupt();
-            throw new VolleyError(e);
+            throw new ZStreamError(e);
         }
 
-        if (response.get() != null) {
+        if (response.get() != null)
+        {
             return response.get();
-        } else if (error.get() != null) {
+        } else if (error.get() != null)
+        {
             throw error.get();
-        } else {
-            throw new VolleyError("Neither response entry was set");
+        } else
+        {
+            throw new ZStreamError("Neither response entry was set");
         }
     }
 
     /**
-     * This method sets the non blocking executor to be used by the network and stack for
-     * non-blocking tasks. This method must be called before performing any requests.
+     * Gets blocking executor to perform any potentially blocking tasks.
      */
-    @RestrictTo({RestrictTo.Scope.LIBRARY_GROUP})
-    public void setNonBlockingExecutor(ExecutorService executor) {
-        mNonBlockingExecutor = executor;
-        mAsyncStack.setNonBlockingExecutor(executor);
+    protected ExecutorService getBlockingExecutor()
+    {
+        return mBlockingExecutor;
     }
 
     /**
@@ -108,23 +112,52 @@ public abstract class AsyncNetwork implements Network {
      * blocking tasks. This method must be called before performing any requests.
      */
     @RestrictTo({RestrictTo.Scope.LIBRARY_GROUP})
-    public void setBlockingExecutor(ExecutorService executor) {
+    public void setBlockingExecutor(ExecutorService executor)
+    {
         mBlockingExecutor = executor;
         mAsyncStack.setBlockingExecutor(executor);
     }
 
-    /** Gets blocking executor to perform any potentially blocking tasks. */
-    protected ExecutorService getBlockingExecutor() {
-        return mBlockingExecutor;
-    }
-
-    /** Gets non-blocking executor to perform any non-blocking tasks. */
-    protected ExecutorService getNonBlockingExecutor() {
+    /**
+     * Gets non-blocking executor to perform any non-blocking tasks.
+     */
+    protected ExecutorService getNonBlockingExecutor()
+    {
         return mNonBlockingExecutor;
     }
 
-    /** Gets the {@link AsyncHttpStack} to be used by the network. */
-    protected AsyncHttpStack getHttpStack() {
+    /**
+     * This method sets the non blocking executor to be used by the network and stack for
+     * non-blocking tasks. This method must be called before performing any requests.
+     */
+    @RestrictTo({RestrictTo.Scope.LIBRARY_GROUP})
+    public void setNonBlockingExecutor(ExecutorService executor)
+    {
+        mNonBlockingExecutor = executor;
+        mAsyncStack.setNonBlockingExecutor(executor);
+    }
+
+    /**
+     * Gets the {@link AsyncHttpStack} to be used by the network.
+     */
+    protected AsyncHttpStack getHttpStack()
+    {
         return mAsyncStack;
+    }
+
+    /**
+     * Interface for callback to be called after request is processed.
+     */
+    public interface OnRequestComplete
+    {
+        /**
+         * Method to be called after successful network request.
+         */
+        void onSuccess(NetworkResponse networkResponse);
+
+        /**
+         * Method to be called after unsuccessful network request.
+         */
+        void onError(ZStreamError zstreamError);
     }
 }

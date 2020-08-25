@@ -17,29 +17,33 @@
 package com.zeoflow.z.stream.toolbox;
 
 import androidx.annotation.Nullable;
+
 import com.zeoflow.z.stream.NetworkResponse;
 import com.zeoflow.z.stream.ParseError;
 import com.zeoflow.z.stream.Response;
 import com.zeoflow.z.stream.Response.ErrorListener;
 import com.zeoflow.z.stream.Response.Listener;
-import java.io.UnsupportedEncodingException;
+
 import org.json.JSONException;
 import org.json.JSONObject;
+
+import java.io.UnsupportedEncodingException;
 
 /**
  * A request for retrieving a {@link JSONObject} response body at a given URL, allowing for an
  * optional {@link JSONObject} to be passed in as part of the request body.
  */
-public class JsonObjectRequest extends JsonRequest<JSONObject> {
+public class JsonObjectRequest extends JsonRequest<JSONObject>
+{
 
     /**
      * Creates a new request.
      *
-     * @param method the HTTP method to use
-     * @param url URL to fetch the JSON from
-     * @param jsonRequest A {@link JSONObject} to post with the request. Null indicates no
-     *     parameters will be posted along with request.
-     * @param listener Listener to receive the JSON response
+     * @param method        the HTTP method to use
+     * @param url           URL to fetch the JSON from
+     * @param jsonRequest   A {@link JSONObject} to post with the request. Null indicates no
+     *                      parameters will be posted along with request.
+     * @param listener      Listener to receive the JSON response
      * @param errorListener Error listener, or null to ignore errors.
      */
     public JsonObjectRequest(
@@ -47,7 +51,8 @@ public class JsonObjectRequest extends JsonRequest<JSONObject> {
             String url,
             @Nullable JSONObject jsonRequest,
             Listener<JSONObject> listener,
-            @Nullable ErrorListener errorListener) {
+            @Nullable ErrorListener errorListener)
+    {
         super(
                 method,
                 url,
@@ -66,7 +71,8 @@ public class JsonObjectRequest extends JsonRequest<JSONObject> {
             String url,
             @Nullable JSONObject jsonRequest,
             Listener<JSONObject> listener,
-            @Nullable ErrorListener errorListener) {
+            @Nullable ErrorListener errorListener)
+    {
         this(
                 jsonRequest == null ? Method.GET : Method.POST,
                 url,
@@ -76,17 +82,21 @@ public class JsonObjectRequest extends JsonRequest<JSONObject> {
     }
 
     @Override
-    protected Response<JSONObject> parseNetworkResponse(NetworkResponse response) {
-        try {
+    protected Response<JSONObject> parseNetworkResponse(NetworkResponse response)
+    {
+        try
+        {
             String jsonString =
                     new String(
                             response.data,
                             HttpHeaderParser.parseCharset(response.headers, PROTOCOL_CHARSET));
             return Response.success(
                     new JSONObject(jsonString), HttpHeaderParser.parseCacheHeaders(response));
-        } catch (UnsupportedEncodingException e) {
+        } catch (UnsupportedEncodingException e)
+        {
             return Response.error(new ParseError(e));
-        } catch (JSONException je) {
+        } catch (JSONException je)
+        {
             return Response.error(new ParseError(je));
         }
     }

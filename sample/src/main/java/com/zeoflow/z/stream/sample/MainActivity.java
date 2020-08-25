@@ -10,7 +10,7 @@ import androidx.annotation.Nullable;
 import com.zeoflow.z.stream.Request;
 import com.zeoflow.z.stream.RequestQueue;
 import com.zeoflow.z.stream.toolbox.StringRequest;
-import com.zeoflow.z.stream.toolbox.Volley;
+import com.zeoflow.z.stream.toolbox.ZStream;
 
 public class MainActivity extends Activity
 {
@@ -29,11 +29,11 @@ public class MainActivity extends Activity
 // Set the tag on the request.
 
 // Add the request to the RequestQueue.
-        requestQueue = Volley.newRequestQueue(this);
+        requestQueue = ZStream.newRequestQueue(this);
         String url = "https://www.google.com";
 
 // Request a string response from the provided URL.
-        stringRequest = new StringRequest(Request.Method.GET, url,
+        stringRequest = new StringRequest(Request.Method.POST, url,
                 response ->
                 {
                     // Display the first 500 characters of the response string.

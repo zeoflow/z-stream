@@ -17,26 +17,33 @@ package com.zeoflow.z.stream;
 
 import android.text.TextUtils;
 
-/** An HTTP header. */
-public final class Header {
+/**
+ * An HTTP header.
+ */
+public final class Header
+{
     private final String mName;
     private final String mValue;
 
-    public Header(String name, String value) {
+    public Header(String name, String value)
+    {
         mName = name;
         mValue = value;
     }
 
-    public final String getName() {
+    public final String getName()
+    {
         return mName;
     }
 
-    public final String getValue() {
+    public final String getValue()
+    {
         return mValue;
     }
 
     @Override
-    public boolean equals(Object o) {
+    public boolean equals(Object o)
+    {
         if (this == o) return true;
         if (o == null || getClass() != o.getClass()) return false;
 
@@ -46,14 +53,16 @@ public final class Header {
     }
 
     @Override
-    public int hashCode() {
+    public int hashCode()
+    {
         int result = mName.hashCode();
         result = 31 * result + mValue.hashCode();
         return result;
     }
 
     @Override
-    public String toString() {
+    public String toString()
+    {
         return "Header[name=" + mName + ",value=" + mValue + "]";
     }
 }

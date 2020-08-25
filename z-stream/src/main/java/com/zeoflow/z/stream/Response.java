@@ -23,25 +23,48 @@ import androidx.annotation.Nullable;
  *
  * @param <T> Parsed type of this response
  */
-public class Response<T> {
+public class Response<T>
+{
 
-    /** Callback interface for delivering parsed responses. */
-    public interface Listener<T> {
-        /** Called when a response is received. */
-        void onResponse(T response);
+    /**
+     * Parsed response, can be null; always null in the case of error.
+     */
+    @Nullable
+    public final T result;
+    /**
+     * Cache metadata for this response; null if not cached or in the case of error.
+     */
+    @Nullable
+    public final Cache.Entry cacheEntry;
+    /**
+     * Detailed error information if <code>errorCode != OK</code>.
+     */
+    @Nullable
+    public final ZStreamError error;
+    /**
+     * True if this response was a soft-expired one and a second one MAY be coming.
+     */
+    public boolean intermediate = false;
+
+    private Response(@Nullable T result, @Nullable Cache.Entry cacheEntry)
+    {
+        this.result = result;
+        this.cacheEntry = cacheEntry;
+        this.error = null;
     }
 
-    /** Callback interface for delivering error responses. */
-    public interface ErrorListener {
-        /**
-         * Callback method that an error has been occurred with the provided error code and optional
-         * user-readable message.
-         */
-        void onErrorResponse(VolleyError error);
+    private Response(ZStreamError error)
+    {
+        this.result = null;
+        this.cacheEntry = null;
+        this.error = error;
     }
 
-    /** Returns a successful response containing the parsed result. */
-    public static <T> Response<T> success(@Nullable T result, @Nullable Cache.Entry cacheEntry) {
+    /**
+     * Returns a successful response containing the parsed result.
+     */
+    public static <T> Response<T> success(@Nullable T result, @Nullable Cache.Entry cacheEntry)
+    {
         return new Response<>(result, cacheEntry);
     }
 
@@ -49,36 +72,39 @@ public class Response<T> {
      * Returns a failed response containing the given error code and an optional localized message
      * displayed to the user.
      */
-    public static <T> Response<T> error(VolleyError error) {
+    public static <T> Response<T> error(ZStreamError error)
+    {
         return new Response<>(error);
     }
 
-    /** Parsed response, can be null; always null in the case of error. */
-    @Nullable public final T result;
-
-    /** Cache metadata for this response; null if not cached or in the case of error. */
-    @Nullable public final Cache.Entry cacheEntry;
-
-    /** Detailed error information if <code>errorCode != OK</code>. */
-    @Nullable public final VolleyError error;
-
-    /** True if this response was a soft-expired one and a second one MAY be coming. */
-    public boolean intermediate = false;
-
-    /** Returns whether this response is considered successful. */
-    public boolean isSuccess() {
+    /**
+     * Returns whether this response is considered successful.
+     */
+    public boolean isSuccess()
+    {
         return error == null;
     }
 
-    private Response(@Nullable T result, @Nullable Cache.Entry cacheEntry) {
-        this.result = result;
-        this.cacheEntry = cacheEntry;
-        this.error = null;
+    /**
+     * Callback interface for delivering parsed responses.
+     */
+    public interface Listener<T>
+    {
+        /**
+         * Called when a response is received.
+         */
+        void onResponse(T response);
     }
 
-    private Response(VolleyError error) {
-        this.result = null;
-        this.cacheEntry = null;
-        this.error = error;
+    /**
+     * Callback interface for delivering error responses.
+     */
+    public interface ErrorListener
+    {
+        /**
+         * Callback method that an error has been occurred with the provided error code and optional
+         * user-readable message.
+         */
+        void onErrorResponse(ZStreamError error);
     }
 }
