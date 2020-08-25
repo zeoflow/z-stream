@@ -13,7 +13,6 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 package com.zeoflow.z.stream;
 
 import android.os.Handler;
@@ -108,14 +107,12 @@ public class ExecutorDelivery implements ResponseDelivery
             // deliver the response. Apps concerned about this guarantee must either call cancel()
             // from the same thread or implement their own guarantee about not invoking their
             // listener after cancel() has been called.
-
             // If this request has canceled, finish it and don't deliver.
             if (mRequest.isCanceled())
             {
                 mRequest.finish("canceled-at-delivery");
                 return;
             }
-
             // Deliver a normal response or error, depending.
             if (mResponse.isSuccess())
             {
@@ -124,7 +121,6 @@ public class ExecutorDelivery implements ResponseDelivery
             {
                 mRequest.deliverError(mResponse.error);
             }
-
             // If this is an intermediate response, add a marker, otherwise we're done
             // and the request can be finished.
             if (mResponse.intermediate)
@@ -134,7 +130,6 @@ public class ExecutorDelivery implements ResponseDelivery
             {
                 mRequest.finish("done");
             }
-
             // If we have been provided a post-delivery runnable, run it.
             if (mRunnable != null)
             {

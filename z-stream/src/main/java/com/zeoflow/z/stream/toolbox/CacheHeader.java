@@ -22,7 +22,6 @@ class CacheHeader
      * Magic number for current version of cache file format.
      */
     private static final int CACHE_MAGIC = 0x20150306;
-
     /**
      * Bits required to write 6 longs and 1 int.
      */
@@ -108,7 +107,6 @@ class CacheHeader
         {
             return entry.allResponseHeaders;
         }
-
         // Legacy fallback - copy headers from the map.
         return HttpHeaderParser.toAllHeaderList(entry.responseHeaders);
     }

@@ -13,7 +13,6 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 package com.zeoflow.z.stream;
 
 import android.net.TrafficStats;
@@ -40,7 +39,6 @@ import java.util.Map;
  */
 public abstract class Request<T> implements Comparable<Request<T>>
 {
-
     /**
      * Default encoding for POST or PUT parameters. See {@link #getParamsEncoding()}.
      */
@@ -149,7 +147,6 @@ public abstract class Request<T> implements Comparable<Request<T>>
         mUrl = url;
         mErrorListener = listener;
         setRetryPolicy(new DefaultRetryPolicy());
-
         mDefaultTrafficStatsTag = findDefaultTrafficStatsTag(url);
     }
 
@@ -265,7 +262,6 @@ public abstract class Request<T> implements Comparable<Request<T>>
                         });
                 return;
             }
-
             mEventLog.add(tag, threadId);
             mEventLog.finish(this.toString());
         }
@@ -796,7 +792,6 @@ public abstract class Request<T> implements Comparable<Request<T>>
     {
         Priority left = this.getPriority();
         Priority right = other.getPriority();
-
         // High-priority requests are "lesser" so they are sorted to the front.
         // Equal priorities are sorted by sequence number to provide FIFO ordering.
         return left == right ? this.mSequence - other.mSequence : right.ordinal() - left.ordinal();
@@ -849,7 +844,6 @@ public abstract class Request<T> implements Comparable<Request<T>>
      */
     /* package */ interface NetworkRequestCompleteListener
     {
-
         /**
          * Callback when a network response has been received.
          */

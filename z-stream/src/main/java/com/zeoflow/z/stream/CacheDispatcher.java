@@ -13,7 +13,6 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 package com.zeoflow.z.stream;
 
 import android.os.Process;
@@ -32,24 +31,19 @@ import java.util.concurrent.BlockingQueue;
  */
 public class CacheDispatcher extends Thread
 {
-
     private static final boolean DEBUG = ZStreamLog.DEBUG;
-
     /**
      * The queue of requests coming in for triage.
      */
     private final BlockingQueue<Request<?>> mCacheQueue;
-
     /**
      * The queue of requests going out to the network.
      */
     private final BlockingQueue<Request<?>> mNetworkQueue;
-
     /**
      * The cache to read from.
      */
     private final Cache mCache;
-
     /**
      * For posting responses.
      */
@@ -100,10 +94,8 @@ public class CacheDispatcher extends Thread
     {
         if (DEBUG) ZStreamLog.v("start new dispatcher");
         Process.setThreadPriority(Process.THREAD_PRIORITY_BACKGROUND);
-
         // Make a blocking call to initialize the cache.
         mCache.initialize();
-
         while (true)
         {
             try
@@ -141,7 +133,6 @@ public class CacheDispatcher extends Thread
     {
         request.addMarker("cache-queue-take");
         request.sendEvent(RequestQueue.RequestEvent.REQUEST_CACHE_LOOKUP_STARTED);
-
         try
         {
             // If the request has been canceled, don't bother dispatching it.
@@ -150,7 +141,6 @@ public class CacheDispatcher extends Thread
                 request.finish("cache-discard-canceled");
                 return;
             }
-
             // Attempt to retrieve this item from cache.
             Cache.Entry entry = mCache.get(request.getCacheKey());
             if (entry == null)
@@ -163,7 +153,6 @@ public class CacheDispatcher extends Thread
                 }
                 return;
             }
-
             // If it is completely expired, just send it to the network.
             if (entry.isExpired())
             {
@@ -175,14 +164,12 @@ public class CacheDispatcher extends Thread
                 }
                 return;
             }
-
             // We have a cache hit; parse its data for delivery back to the request.
             request.addMarker("cache-hit");
             Response<?> response =
                     request.parseNetworkResponse(
                             new NetworkResponse(entry.data, entry.responseHeaders));
             request.addMarker("cache-hit-parsed");
-
             if (!response.isSuccess())
             {
                 request.addMarker("cache-parsing-failed");
@@ -207,7 +194,6 @@ public class CacheDispatcher extends Thread
                 request.setCacheEntry(entry);
                 // Mark the response as intermediate.
                 response.intermediate = true;
-
                 if (!mWaitingRequestManager.maybeAddToWaitingRequests(request))
                 {
                     // Post the intermediate response back to the user and have

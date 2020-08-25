@@ -13,7 +13,6 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 package com.zeoflow.z.stream;
 
 import androidx.annotation.Nullable;
@@ -23,7 +22,6 @@ import androidx.annotation.Nullable;
  */
 public abstract class AsyncCache
 {
-
     /**
      * Retrieves an entry from the cache and sends it back through the {@link
      * OnGetCompleteCallback#onGetComplete} function

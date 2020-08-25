@@ -13,7 +13,6 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 package com.zeoflow.z.stream;
 
 import android.os.Handler;
@@ -51,7 +50,6 @@ public class AsyncRequestQueue extends RequestQueue
      * Default number of blocking threads to start.
      */
     private static final int DEFAULT_BLOCKING_THREAD_POOL_SIZE = 4;
-
     /**
      * AsyncCache used to retrieve and store responses.
      *
@@ -59,7 +57,6 @@ public class AsyncRequestQueue extends RequestQueue
      */
     @Nullable
     private final AsyncCache mAsyncCache;
-
     /**
      * AsyncNetwork used to perform nework requests.
      */
@@ -146,13 +143,11 @@ public class AsyncRequestQueue extends RequestQueue
     public void start()
     {
         stop(); // Make sure any currently running threads are stopped
-
         // Create blocking / non-blocking executors and set them in the network and stack.
         mNonBlockingExecutor = mExecutorFactory.createNonBlockingExecutor(getBlockingQueue());
         mBlockingExecutor = mExecutorFactory.createBlockingExecutor(getBlockingQueue());
         mNetwork.setBlockingExecutor(mBlockingExecutor);
         mNetwork.setNonBlockingExecutor(mNonBlockingExecutor);
-
         mNonBlockingExecutor.execute(
                 new Runnable()
                 {
@@ -252,7 +247,6 @@ public class AsyncRequestQueue extends RequestQueue
             }
             return;
         }
-
         // If it is completely expired, just send it to the network.
         if (entry.isExpired())
         {
@@ -264,7 +258,6 @@ public class AsyncRequestQueue extends RequestQueue
             }
             return;
         }
-
         // We have a cache hit; parse its data for delivery back to the request.
         mBlockingExecutor.execute(new CacheParseTask<>(mRequest, entry));
     }
@@ -457,9 +450,7 @@ public class AsyncRequestQueue extends RequestQueue
                 mRequest.finish("cache-discard-canceled");
                 return;
             }
-
             mRequest.addMarker("cache-queue-take");
-
             // Attempt to retrieve this item from cache.
             if (mAsyncCache != null)
             {
@@ -504,7 +495,6 @@ public class AsyncRequestQueue extends RequestQueue
                                     /* networkTimeMs= */ 0,
                                     entry.allResponseHeaders));
             mRequest.addMarker("cache-hit-parsed");
-
             if (!entry.refreshNeeded())
             {
                 // Completely unexpired cache hit. Just deliver the response.
@@ -518,7 +508,6 @@ public class AsyncRequestQueue extends RequestQueue
                 mRequest.setCacheEntry(entry);
                 // Mark the response as intermediate.
                 response.intermediate = true;
-
                 if (!mWaitingRequestManager.maybeAddToWaitingRequests(mRequest))
                 {
                     // Post the intermediate response back to the user and have
@@ -585,13 +574,10 @@ public class AsyncRequestQueue extends RequestQueue
                 mRequest.notifyListenerResponseNotUsable();
                 return;
             }
-
             final long startTimeMs = SystemClock.elapsedRealtime();
             mRequest.addMarker("network-queue-take");
-
             // TODO: Figure out what to do with traffic stats tags. Can this be pushed to the
             // HTTP stack, or is it no longer feasible to support?
-
             // Perform the network request.
             mNetwork.performRequest(
                     mRequest,
@@ -601,7 +587,6 @@ public class AsyncRequestQueue extends RequestQueue
                         public void onSuccess(final NetworkResponse networkResponse)
                         {
                             mRequest.addMarker("network-http-complete");
-
                             // If the server returned 304 AND we delivered a response already,
                             // we're done -- don't deliver a second identical response.
                             if (networkResponse.notModified && mRequest.hasHadResponseDelivered())
@@ -610,7 +595,6 @@ public class AsyncRequestQueue extends RequestQueue
                                 mRequest.notifyListenerResponseNotUsable();
                                 return;
                             }
-
                             // Parse the response here on the worker thread.
                             mBlockingExecutor.execute(
                                     new NetworkParseTask<>(mRequest, networkResponse));
@@ -645,7 +629,6 @@ public class AsyncRequestQueue extends RequestQueue
         {
             final Response<?> response = mRequest.parseNetworkResponse(networkResponse);
             mRequest.addMarker("network-parse-complete");
-
             // Write to cache if applicable.
             // TODO: Only update cache metadata instead of entire
             // record for 304s.

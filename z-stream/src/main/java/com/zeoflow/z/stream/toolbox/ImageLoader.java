@@ -174,7 +174,6 @@ public class ImageLoader
     public boolean isCached(String requestUrl, int maxWidth, int maxHeight, ScaleType scaleType)
     {
         Threads.throwIfNotOnMainThread();
-
         String cacheKey = getCacheKey(requestUrl, maxWidth, maxHeight, scaleType);
         return mCache.getBitmap(cacheKey) != null;
     }
@@ -226,12 +225,9 @@ public class ImageLoader
             int maxHeight,
             ScaleType scaleType)
     {
-
         // only fulfill requests that were initiated from the main thread.
         Threads.throwIfNotOnMainThread();
-
         final String cacheKey = getCacheKey(requestUrl, maxWidth, maxHeight, scaleType);
-
         // Try to look up the request in the cache of remote images.
         Bitmap cachedBitmap = mCache.getBitmap(cacheKey);
         if (cachedBitmap != null)
@@ -243,14 +239,11 @@ public class ImageLoader
             imageListener.onResponse(container, true);
             return container;
         }
-
         // The bitmap did not exist in the cache, fetch it!
         ImageContainer imageContainer =
                 new ImageContainer(null, requestUrl, cacheKey, imageListener);
-
         // Update the caller to let them know that they should use the default bitmap.
         imageListener.onResponse(imageContainer, true);
-
         // Check to see if a request is already in-flight or completed but pending batch delivery.
         BatchedImageRequest request = mInFlightRequests.get(cacheKey);
         if (request == null)
@@ -263,12 +256,10 @@ public class ImageLoader
             request.addContainer(imageContainer);
             return imageContainer;
         }
-
         // The request is not already in flight. Send the new request to the network and
         // track it.
         Request<Bitmap> newRequest =
                 makeImageRequest(requestUrl, maxWidth, maxHeight, scaleType, cacheKey);
-
         mRequestQueue.add(newRequest);
         mInFlightRequests.put(cacheKey, new BatchedImageRequest(newRequest, imageContainer));
         return imageContainer;
@@ -326,15 +317,12 @@ public class ImageLoader
     {
         // cache the image that was fetched.
         mCache.putBitmap(cacheKey, response);
-
         // remove the request from the list of in-flight requests.
         BatchedImageRequest request = mInFlightRequests.remove(cacheKey);
-
         if (request != null)
         {
             // Update the response bitmap.
             request.mResponseBitmap = response;
-
             // Send the batched response
             batchResponse(cacheKey, request);
         }
@@ -350,12 +338,10 @@ public class ImageLoader
         // Notify the requesters that something failed via a null result.
         // Remove this request from the list of in-flight requests.
         BatchedImageRequest request = mInFlightRequests.remove(cacheKey);
-
         if (request != null)
         {
             // Set the error for this request
             request.setError(error);
-
             // Send the batched response
             batchResponse(cacheKey, request);
         }
@@ -573,12 +559,10 @@ public class ImageLoader
         public void cancelRequest()
         {
             Threads.throwIfNotOnMainThread();
-
             if (mListener == null)
             {
                 return;
             }
-
             BatchedImageRequest request = mInFlightRequests.get(mCacheKey);
             if (request != null)
             {

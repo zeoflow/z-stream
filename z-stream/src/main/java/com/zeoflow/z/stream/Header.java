@@ -46,9 +46,7 @@ public final class Header
     {
         if (this == o) return true;
         if (o == null || getClass() != o.getClass()) return false;
-
         Header header = (Header) o;
-
         return TextUtils.equals(mName, header.mName) && TextUtils.equals(mValue, header.mValue);
     }
 

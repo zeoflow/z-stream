@@ -36,7 +36,6 @@ import java.util.Map;
 @SuppressWarnings("deprecation")
 class AdaptedHttpStack extends BaseHttpStack
 {
-
     private final HttpStack mHttpStack;
 
     AdaptedHttpStack(HttpStack httpStack)
@@ -58,27 +57,22 @@ class AdaptedHttpStack extends BaseHttpStack
             // it's an Apache-specific error, so wrap it in a standard timeout exception.
             throw new SocketTimeoutException(e.getMessage());
         }
-
         int statusCode = apacheResp.getStatusLine().getStatusCode();
-
         org.apache.http.Header[] headers = apacheResp.getAllHeaders();
         List<Header> headerList = new ArrayList<>(headers.length);
         for (org.apache.http.Header header : headers)
         {
             headerList.add(new Header(header.getName(), header.getValue()));
         }
-
         if (apacheResp.getEntity() == null)
         {
             return new HttpResponse(statusCode, headerList);
         }
-
         long contentLength = apacheResp.getEntity().getContentLength();
         if ((int) contentLength != contentLength)
         {
             throw new IOException("Response too large: " + contentLength);
         }
-
         return new HttpResponse(
                 statusCode,
                 headerList,

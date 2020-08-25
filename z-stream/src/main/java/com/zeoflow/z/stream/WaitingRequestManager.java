@@ -13,7 +13,6 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 package com.zeoflow.z.stream;
 
 import androidx.annotation.NonNull;
@@ -31,7 +30,6 @@ import java.util.concurrent.BlockingQueue;
  */
 class WaitingRequestManager implements Request.NetworkRequestCompleteListener
 {
-
     /**
      * Staging area for requests that already have a duplicate request in flight.
      *
@@ -43,23 +41,19 @@ class WaitingRequestManager implements Request.NetworkRequestCompleteListener
      * </ul>
      */
     private final Map<String, List<Request<?>>> mWaitingRequests = new HashMap<>();
-
     private final ResponseDelivery mResponseDelivery;
-
     /**
      * RequestQueue that is passed in by the AsyncRequestQueue. This is null when this instance is
      * initialized by the {@link CacheDispatcher}
      */
     @Nullable
     private final RequestQueue mRequestQueue;
-
     /**
      * CacheDispacter that is passed in by the CacheDispatcher. This is null when this instance is
      * initialized by the {@link AsyncRequestQueue}
      */
     @Nullable
     private final CacheDispatcher mCacheDispatcher;
-
     /**
      * BlockingQueue that is passed in by the CacheDispatcher. This is null when this instance is
      * initialized by the {@link AsyncRequestQueue}

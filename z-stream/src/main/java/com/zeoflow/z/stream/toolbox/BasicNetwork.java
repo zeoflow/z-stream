@@ -13,7 +13,6 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 package com.zeoflow.z.stream.toolbox;
 
 import android.os.SystemClock;
@@ -38,7 +37,6 @@ import java.util.TreeMap;
 public class BasicNetwork implements Network
 {
     private static final int DEFAULT_POOL_SIZE = 4096;
-
     /**
      * @deprecated Should never have been exposed in the API. This field may be removed in a future
      * release of ZStream.
@@ -132,7 +130,6 @@ public class BasicNetwork implements Network
                         HttpHeaderParser.getCacheHeaders(request.getCacheEntry());
                 httpResponse = mBaseHttpStack.executeRequest(request, additionalRequestHeaders);
                 int statusCode = httpResponse.getStatusCode();
-
                 responseHeaders = httpResponse.getHeaders();
                 // Handle cache validation.
                 if (statusCode == HttpURLConnection.HTTP_NOT_MODIFIED)
@@ -141,7 +138,6 @@ public class BasicNetwork implements Network
                     return NetworkUtility.getNotModifiedNetworkResponse(
                             request, requestDuration, responseHeaders);
                 }
-
                 // Some responses such as 204s do not have content.  We must check.
                 InputStream inputStream = httpResponse.getContent();
                 if (inputStream != null)
@@ -155,12 +151,10 @@ public class BasicNetwork implements Network
                     // no-content request.
                     responseContents = new byte[0];
                 }
-
                 // if the request is slow, log it.
                 long requestLifetime = SystemClock.elapsedRealtime() - requestStart;
                 NetworkUtility.logSlowRequests(
                         requestLifetime, request, responseContents, statusCode);
-
                 if (statusCode < 200 || statusCode > 299)
                 {
                     throw new IOException();

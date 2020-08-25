@@ -13,7 +13,6 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 package com.zeoflow.z.stream.toolbox;
 
 import androidx.annotation.GuardedBy;
@@ -32,12 +31,10 @@ import java.io.UnsupportedEncodingException;
  */
 public class StringRequest extends Request<String>
 {
-
     /**
      * Lock to guard mListener as it is cleared on cancel() and read on delivery.
      */
     private final Object mLock = new Object();
-
     @Nullable
     @GuardedBy("mLock")
     private Listener<String> mListener;

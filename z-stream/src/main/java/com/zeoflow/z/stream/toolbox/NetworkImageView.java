@@ -37,52 +37,44 @@ public class NetworkImageView extends ImageView
      * The URL of the network image to load
      */
     private String mUrl;
-
     /**
      * Resource ID of the image to be used as a placeholder until the network image is loaded. Won't
      * be set at the same time as mDefaultImageDrawable or mDefaultImageBitmap.
      */
     private int mDefaultImageId;
-
     /**
      * Drawable of the image to be used as a placeholder until the network image is loaded. Won't be
      * set at the same time as mDefaultImageId or mDefaultImageBitmap.
      */
     @Nullable
     private Drawable mDefaultImageDrawable;
-
     /**
      * Bitmap of the image to be used as a placeholder until the network image is loaded. Won't be
      * set at the same time as mDefaultImageId or mDefaultImageDrawable.
      */
     @Nullable
     private Bitmap mDefaultImageBitmap;
-
     /**
      * Resource ID of the image to be used if the network response fails. Won't be set at the same
      * time as mErrorImageDrawable or mErrorImageBitmap.
      */
     private int mErrorImageId;
-
     /**
      * Bitmap of the image to be used if the network response fails. Won't be set at the same time
      * as mErrorImageId or mErrorImageBitmap.
      */
     @Nullable
     private Drawable mErrorImageDrawable;
-
     /**
      * Bitmap of the image to be used if the network response fails. Won't be set at the same time
      * as mErrorImageId or mErrorImageDrawable.
      */
     @Nullable
     private Bitmap mErrorImageBitmap;
-
     /**
      * Local copy of the ImageLoader.
      */
     private ImageLoader mImageLoader;
-
     /**
      * Current ImageContainer. (either in-flight or finished)
      */
@@ -222,14 +214,12 @@ public class NetworkImageView extends ImageView
         int width = getWidth();
         int height = getHeight();
         ScaleType scaleType = getScaleType();
-
         boolean wrapWidth = false, wrapHeight = false;
         if (getLayoutParams() != null)
         {
             wrapWidth = getLayoutParams().width == LayoutParams.WRAP_CONTENT;
             wrapHeight = getLayoutParams().height == LayoutParams.WRAP_CONTENT;
         }
-
         // if the view's bounds aren't known yet, and this is not a wrap-content/wrap-content
         // view, hold off on loading the image.
         boolean isFullyWrapContent = wrapWidth && wrapHeight;
@@ -237,7 +227,6 @@ public class NetworkImageView extends ImageView
         {
             return;
         }
-
         // if the URL to be loaded in this view is empty, cancel any old requests and clear the
         // currently loaded image.
         if (TextUtils.isEmpty(mUrl))
@@ -250,7 +239,6 @@ public class NetworkImageView extends ImageView
             setDefaultImageOrNull();
             return;
         }
-
         // if there was an old request in this view, check if it needs to be canceled.
         if (mImageContainer != null && mImageContainer.getRequestUrl() != null)
         {
@@ -265,14 +253,11 @@ public class NetworkImageView extends ImageView
                 setDefaultImageOrNull();
             }
         }
-
         // Calculate the max image width / height to use while ignoring WRAP_CONTENT dimens.
         int maxWidth = wrapWidth ? 0 : width;
         int maxHeight = wrapHeight ? 0 : height;
-
         // The pre-existing content of this view didn't match the current URL. Load the new image
         // from the network.
-
         // update the ImageContainer to be the new bitmap container.
         mImageContainer =
                 mImageLoader.get(
@@ -318,7 +303,6 @@ public class NetworkImageView extends ImageView
                                             });
                                     return;
                                 }
-
                                 if (response.getBitmap() != null)
                                 {
                                     setImageBitmap(response.getBitmap());

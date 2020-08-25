@@ -13,7 +13,6 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 package com.zeoflow.z.stream.toolbox;
 
 import android.accounts.Account;
@@ -130,7 +129,6 @@ public class AndroidAuthenticator implements Authenticator
         {
             throw new AuthFailureError("Got null auth token for type: " + mAuthTokenType);
         }
-
         return authToken;
     }
 

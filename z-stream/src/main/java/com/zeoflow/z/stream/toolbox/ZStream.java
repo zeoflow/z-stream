@@ -13,7 +13,6 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 package com.zeoflow.z.stream.toolbox;
 
 import android.content.Context;
@@ -29,7 +28,6 @@ import java.io.File;
 
 public class ZStream
 {
-
     /**
      * Default on-disk cache directory.
      */
@@ -66,7 +64,6 @@ public class ZStream
                 } catch (NameNotFoundException e)
                 {
                 }
-
                 network =
                         new BasicNetwork(
                                 new HttpClientStack(AndroidHttpClient.newInstance(userAgent)));
@@ -75,7 +72,6 @@ public class ZStream
         {
             network = new BasicNetwork(stack);
         }
-
         return newRequestQueue(context, network);
     }
 

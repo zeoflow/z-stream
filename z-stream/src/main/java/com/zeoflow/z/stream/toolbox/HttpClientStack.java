@@ -13,7 +13,6 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 package com.zeoflow.z.stream.toolbox;
 
 import com.zeoflow.z.stream.AuthFailureError;
@@ -193,7 +192,6 @@ public class HttpClientStack implements HttpStack
      */
     public static final class HttpPatch extends HttpEntityEnclosingRequestBase
     {
-
         public static final String METHOD_NAME = "PATCH";
 
         public HttpPatch()

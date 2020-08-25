@@ -13,7 +13,6 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 package com.zeoflow.z.stream.toolbox;
 
 import android.os.SystemClock;
@@ -38,12 +37,10 @@ import java.util.Map;
 
 class DiskBasedCacheUtility
 {
-
     /**
      * Default maximum disk usage in bytes.
      */
     static final int DEFAULT_DISK_USAGE_BYTES = 5 * 1024 * 1024;
-
     /**
      * High water mark percentage for the cache
      */
@@ -122,11 +119,9 @@ class DiskBasedCacheUtility
         {
             ZStreamLog.v("Pruning old cache entries.");
         }
-
         long before = totalSize;
         int prunedFiles = 0;
         long startTime = SystemClock.elapsedRealtime();
-
         Iterator<Map.Entry<String, CacheHeader>> iterator = entries.entrySet().iterator();
         while (iterator.hasNext())
         {
@@ -144,13 +139,11 @@ class DiskBasedCacheUtility
             }
             iterator.remove();
             prunedFiles++;
-
             if (!doesDataExceedHighWaterMark(totalSize, maxCacheSizeInBytes))
             {
                 break;
             }
         }
-
         if (ZStreamLog.DEBUG)
         {
             ZStreamLog.v(
@@ -197,7 +190,6 @@ class DiskBasedCacheUtility
         }
         return totalSize;
     }
-
     /*
      * Homebrewed simple serialization system used for reading and writing cache
      * headers on disk. Once upon a time, this used the standard Java
@@ -379,14 +371,12 @@ class DiskBasedCacheUtility
             return 4;
         }
         int bytes = 4;
-
         for (Header header : headers)
         {
             bytes += header.getName().getBytes("UTF-8").length;
             bytes += header.getValue().getBytes("UTF-8").length;
             bytes += 16; // two longs denoting length of strings
         }
-
         return bytes;
     }
 }

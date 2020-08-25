@@ -29,7 +29,6 @@ import java.util.List;
  */
 public final class HttpResponse
 {
-
     private final int mStatusCode;
     private final List<Header> mHeaders;
     private final int mContentLength;

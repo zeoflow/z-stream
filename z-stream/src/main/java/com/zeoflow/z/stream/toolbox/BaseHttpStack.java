@@ -39,7 +39,6 @@ import java.util.Map;
 @SuppressWarnings("deprecation") // for HttpStack
 public abstract class BaseHttpStack implements HttpStack
 {
-
     /**
      * Performs an HTTP request with the given parameters.
      *
@@ -72,20 +71,17 @@ public abstract class BaseHttpStack implements HttpStack
             throws IOException, AuthFailureError
     {
         HttpResponse response = executeRequest(request, additionalHeaders);
-
         ProtocolVersion protocolVersion = new ProtocolVersion("HTTP", 1, 1);
         StatusLine statusLine =
                 new BasicStatusLine(
                         protocolVersion, response.getStatusCode(), /* reasonPhrase= */ "");
         BasicHttpResponse apacheResponse = new BasicHttpResponse(statusLine);
-
         List<org.apache.http.Header> headers = new ArrayList<>();
         for (Header header : response.getHeaders())
         {
             headers.add(new BasicHeader(header.getName(), header.getValue()));
         }
         apacheResponse.setHeaders(headers.toArray(new org.apache.http.Header[0]));
-
         InputStream responseStream = response.getContent();
         if (responseStream != null)
         {
@@ -94,7 +90,6 @@ public abstract class BaseHttpStack implements HttpStack
             entity.setContentLength(response.getContentLength());
             apacheResponse.setEntity(entity);
         }
-
         return apacheResponse;
     }
 }

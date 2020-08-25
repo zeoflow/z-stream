@@ -13,7 +13,6 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 package com.zeoflow.z.stream.toolbox;
 
 import java.io.ByteArrayOutputStream;
@@ -30,7 +29,6 @@ public class PoolingByteArrayOutputStream extends ByteArrayOutputStream
      * the default size to which the underlying byte array is initialized.
      */
     private static final int DEFAULT_SIZE = 256;
-
     private final ByteArrayPool mPool;
 
     /**

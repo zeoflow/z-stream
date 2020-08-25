@@ -13,7 +13,6 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 package com.zeoflow.z.stream.toolbox;
 
 import androidx.annotation.VisibleForTesting;
@@ -43,10 +42,10 @@ import javax.net.ssl.SSLSocketFactory;
  */
 public class HurlStack extends BaseHttpStack
 {
-
     private static final int HTTP_CONTINUE = 100;
     private final UrlRewriter mUrlRewriter;
     private final SSLSocketFactory mSslSocketFactory;
+
     public HurlStack()
     {
         this(/* urlRewriter = */ null);
@@ -160,12 +159,10 @@ public class HurlStack extends BaseHttpStack
                 // Signal to the caller that something was wrong with the connection.
                 throw new IOException("Could not retrieve response code from HttpUrlConnection.");
             }
-
             if (!hasResponseBody(request.getMethod(), responseCode))
             {
                 return new HttpResponse(responseCode, convertHeaders(connection.getHeaderFields()));
             }
-
             // Need to keep the connection open until the stream is consumed by the caller. Wrap the
             // stream such that close() will disconnect the connection.
             keepConnectionOpen = true;
@@ -203,12 +200,10 @@ public class HurlStack extends BaseHttpStack
     protected HttpURLConnection createConnection(URL url) throws IOException
     {
         HttpURLConnection connection = (HttpURLConnection) url.openConnection();
-
         // Workaround for the M release HttpURLConnection not observing the
         // HttpURLConnection.setFollowRedirects() property.
         // https://code.google.com/p/android/issues/detail?id=194495
         connection.setInstanceFollowRedirects(HttpURLConnection.getFollowRedirects());
-
         return connection;
     }
 
@@ -222,19 +217,16 @@ public class HurlStack extends BaseHttpStack
     private HttpURLConnection openConnection(URL url, Request<?> request) throws IOException
     {
         HttpURLConnection connection = createConnection(url);
-
         int timeoutMs = request.getTimeoutMs();
         connection.setConnectTimeout(timeoutMs);
         connection.setReadTimeout(timeoutMs);
         connection.setUseCaches(false);
         connection.setDoInput(true);
-
         // use caller-provided custom SslSocketFactory, if any, for HTTPS
         if ("https".equals(url.getProtocol()) && mSslSocketFactory != null)
         {
             ((HttpsURLConnection) connection).setSSLSocketFactory(mSslSocketFactory);
         }
-
         return connection;
     }
 

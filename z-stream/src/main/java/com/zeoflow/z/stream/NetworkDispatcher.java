@@ -13,7 +13,6 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 package com.zeoflow.z.stream;
 
 import android.annotation.TargetApi;
@@ -36,7 +35,6 @@ import java.util.concurrent.BlockingQueue;
  */
 public class NetworkDispatcher extends Thread
 {
-
     /**
      * The queue of requests to service.
      */
@@ -142,7 +140,6 @@ public class NetworkDispatcher extends Thread
         try
         {
             request.addMarker("network-queue-take");
-
             // If the request was cancelled already, do not perform the
             // network request.
             if (request.isCanceled())
@@ -151,13 +148,10 @@ public class NetworkDispatcher extends Thread
                 request.notifyListenerResponseNotUsable();
                 return;
             }
-
             addTrafficStatsTag(request);
-
             // Perform the network request.
             NetworkResponse networkResponse = mNetwork.performRequest(request);
             request.addMarker("network-http-complete");
-
             // If the server returned 304 AND we delivered a response already,
             // we're done -- don't deliver a second identical response.
             if (networkResponse.notModified && request.hasHadResponseDelivered())
@@ -166,11 +160,9 @@ public class NetworkDispatcher extends Thread
                 request.notifyListenerResponseNotUsable();
                 return;
             }
-
             // Parse the response here on the worker thread.
             Response<?> response = request.parseNetworkResponse(networkResponse);
             request.addMarker("network-parse-complete");
-
             // Write to cache if applicable.
             // TODO: Only update cache metadata instead of entire record for 304s.
             if (request.shouldCache() && response.cacheEntry != null)
@@ -178,7 +170,6 @@ public class NetworkDispatcher extends Thread
                 mCache.put(request.getCacheKey(), response.cacheEntry);
                 request.addMarker("network-cache-written");
             }
-
             // Post the response back.
             request.markDelivered();
             mDelivery.postResponse(request, response);

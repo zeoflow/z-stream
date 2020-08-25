@@ -13,7 +13,6 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 package com.zeoflow.z.stream;
 
 import android.os.Handler;
@@ -39,7 +38,6 @@ import java.util.concurrent.atomic.AtomicInteger;
  */
 public class RequestQueue
 {
-
     /**
      * Number of network request dispatcher threads to start.
      */
@@ -140,7 +138,6 @@ public class RequestQueue
         // Create the cache dispatcher and start it.
         mCacheDispatcher = new CacheDispatcher(mCacheQueue, mNetworkQueue, mCache, mDelivery);
         mCacheDispatcher.start();
-
         // Create network dispatchers (and corresponding threads) up to the pool size.
         for (int i = 0; i < mDispatchers.length; i++)
         {
@@ -239,12 +236,10 @@ public class RequestQueue
         {
             mCurrentRequests.add(request);
         }
-
         // Process requests in the order they are added.
         request.setSequence(getSequenceNumber());
         request.addMarker("add-to-queue");
         sendRequestEvent(request, RequestEvent.REQUEST_QUEUED);
-
         beginRequest(request);
         return request;
     }

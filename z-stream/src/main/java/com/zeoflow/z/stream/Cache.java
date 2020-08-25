@@ -13,7 +13,6 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 package com.zeoflow.z.stream;
 
 import androidx.annotation.Nullable;
@@ -79,32 +78,26 @@ public interface Cache
          * The data returned from cache.
          */
         public byte[] data;
-
         /**
          * ETag for cache coherency.
          */
         public String etag;
-
         /**
          * Date of this response as reported by the server.
          */
         public long serverDate;
-
         /**
          * The last modified date for the requested object.
          */
         public long lastModified;
-
         /**
          * TTL for this record.
          */
         public long ttl;
-
         /**
          * Soft TTL for this record.
          */
         public long softTtl;
-
         /**
          * Response headers as received from server; must be non-null. Should not be mutated
          * directly.
@@ -114,7 +107,6 @@ public interface Cache
          * headers if the {@link Cache} implementation supports it.
          */
         public Map<String, String> responseHeaders = Collections.emptyMap();
-
         /**
          * All response headers. May be null depending on the {@link Cache} implementation. Should
          * not be mutated directly.

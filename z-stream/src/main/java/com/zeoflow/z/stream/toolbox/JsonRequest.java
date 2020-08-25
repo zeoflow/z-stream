@@ -13,7 +13,6 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 package com.zeoflow.z.stream.toolbox;
 
 import androidx.annotation.GuardedBy;
@@ -40,13 +39,11 @@ public abstract class JsonRequest<T> extends Request<T>
      * Default charset for JSON request.
      */
     protected static final String PROTOCOL_CHARSET = "utf-8";
-
     /**
      * Content type for request.
      */
     private static final String PROTOCOL_CONTENT_TYPE =
             String.format("application/json; charset=%s", PROTOCOL_CHARSET);
-
     /**
      * Lock to guard mListener as it is cleared on cancel() and read on delivery.
      */

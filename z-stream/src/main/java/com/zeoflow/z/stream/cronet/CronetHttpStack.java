@@ -13,7 +13,6 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 package com.zeoflow.z.stream.cronet;
 
 import android.content.Context;
@@ -53,7 +52,6 @@ import java.util.Map;
  */
 public class CronetHttpStack extends AsyncHttpStack
 {
-
     private final CronetEngine mCronetEngine;
     private final ByteArrayPool mPool;
     private final UrlRewriter mUrlRewriter;
@@ -154,7 +152,6 @@ public class CronetHttpStack extends AsyncHttpStack
                         callback.onError(e);
                     }
                 };
-
         String url = request.getUrl();
         String rewritten = mUrlRewriter.rewriteUrl(url);
         if (rewritten == null)
@@ -163,7 +160,6 @@ public class CronetHttpStack extends AsyncHttpStack
             return;
         }
         url = rewritten;
-
         // We can call allowDirectExecutor here and run directly on the network thread, since all
         // the callbacks are non-blocking.
         final UrlRequest.Builder builder =

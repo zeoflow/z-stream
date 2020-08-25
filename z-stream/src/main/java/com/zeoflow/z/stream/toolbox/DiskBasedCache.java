@@ -13,7 +13,6 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 package com.zeoflow.z.stream.toolbox;
 
 import android.text.TextUtils;
@@ -45,7 +44,6 @@ import java.util.Map;
  */
 public class DiskBasedCache implements Cache
 {
-
     /**
      * Map of the Key, CacheHeader pairs
      */
@@ -287,7 +285,6 @@ public class DiskBasedCache implements Cache
         {
             return;
         }
-
         File file = DiskBasedCacheUtility.getFileForKey(key, mRootDirectorySupplier);
         try
         {

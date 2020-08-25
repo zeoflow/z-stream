@@ -13,7 +13,6 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 package com.zeoflow.z.stream.toolbox;
 
 import android.os.Build;
@@ -47,12 +46,10 @@ import java.util.concurrent.CompletableFuture;
 @RequiresApi(Build.VERSION_CODES.O)
 public class DiskBasedAsyncCache extends AsyncCache
 {
-
     /**
      * Map of the Key, CacheHeader pairs
      */
     private final Map<String, CacheHeader> mEntries = new LinkedHashMap<>(16, .75f, true);
-
     /**
      * The supplier for the root directory to use for the cache.
      */
@@ -92,7 +89,6 @@ public class DiskBasedAsyncCache extends AsyncCache
         }
         final File file = DiskBasedCacheUtility.getFileForKey(key, mRootDirectorySupplier);
         Path path = Paths.get(file.getPath());
-
         // channel we can close after IOException
         AsynchronousFileChannel channel = null;
         try
@@ -167,10 +163,8 @@ public class DiskBasedAsyncCache extends AsyncCache
         {
             return;
         }
-
         final File file = DiskBasedCacheUtility.getFileForKey(key, mRootDirectorySupplier);
         Path path = Paths.get(file.getPath());
-
         // channel we can close after IOException
         AsynchronousFileChannel channel = null;
         try
@@ -220,7 +214,6 @@ public class DiskBasedAsyncCache extends AsyncCache
                             {
                                 deleteFile(file);
                             }
-
                             callback.onWriteComplete();
                         }
 
@@ -350,7 +343,6 @@ public class DiskBasedAsyncCache extends AsyncCache
         }
         CompletableFuture<Void> voidCompletableFuture =
                 CompletableFuture.allOf(reads.toArray(new CompletableFuture[0]));
-
         voidCompletableFuture.thenRun(
                 new Runnable()
                 {

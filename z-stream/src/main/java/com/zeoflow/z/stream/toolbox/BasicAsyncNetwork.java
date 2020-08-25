@@ -13,7 +13,6 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 package com.zeoflow.z.stream.toolbox;
 
 import android.os.SystemClock;
@@ -42,7 +41,6 @@ import static com.zeoflow.z.stream.toolbox.NetworkUtility.logSlowRequests;
  */
 public class BasicAsyncNetwork extends AsyncNetwork
 {
-
     private final ByteArrayPool mPool;
 
     /**
@@ -73,7 +71,6 @@ public class BasicAsyncNetwork extends AsyncNetwork
                             request, requestDuration, responseHeaders));
             return;
         }
-
         byte[] responseContents = httpResponse.getContentBytes();
         if (responseContents == null && httpResponse.getContent() == null)
         {
@@ -81,7 +78,6 @@ public class BasicAsyncNetwork extends AsyncNetwork
             // no-content request.
             responseContents = new byte[0];
         }
-
         if (responseContents != null)
         {
             onResponseRead(
@@ -94,7 +90,6 @@ public class BasicAsyncNetwork extends AsyncNetwork
                     responseContents);
             return;
         }
-
         // The underlying AsyncHttpStack does not support asynchronous reading of the response into
         // a byte array, so we need to submit a blocking task to copy the response from the
         // InputStream instead.
@@ -189,7 +184,6 @@ public class BasicAsyncNetwork extends AsyncNetwork
         // if the request is slow, log it.
         long requestLifetime = SystemClock.elapsedRealtime() - requestStartMs;
         logSlowRequests(requestLifetime, request, responseContents, statusCode);
-
         if (statusCode < 200 || statusCode > 299)
         {
             onRequestFailed(
@@ -201,7 +195,6 @@ public class BasicAsyncNetwork extends AsyncNetwork
                     responseContents);
             return;
         }
-
         callback.onSuccess(
                 new NetworkResponse(
                         statusCode,

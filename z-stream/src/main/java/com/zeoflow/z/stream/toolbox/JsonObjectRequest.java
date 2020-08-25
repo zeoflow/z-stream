@@ -13,7 +13,6 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 package com.zeoflow.z.stream.toolbox;
 
 import androidx.annotation.Nullable;
@@ -35,7 +34,6 @@ import java.io.UnsupportedEncodingException;
  */
 public class JsonObjectRequest extends JsonRequest<JSONObject>
 {
-
     /**
      * Creates a new request.
      *

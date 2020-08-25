@@ -13,7 +13,6 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 package com.zeoflow.z.stream;
 
 import android.os.SystemClock;
@@ -49,7 +48,6 @@ public class ZStreamLog
     {
         d("Changing log tag to %s", tag);
         TAG = tag;
-
         // Reinitialize the DEBUG "constant"
         DEBUG = Log.isLoggable(TAG, Log.VERBOSE);
     }
@@ -95,7 +93,6 @@ public class ZStreamLog
     {
         String msg = (args == null) ? format : String.format(Locale.US, format, args);
         StackTraceElement[] trace = new Throwable().fillInStackTrace().getStackTrace();
-
         String caller = "<unknown>";
         // Walk up the stack looking for the first caller outside of ZStreamLog.
         // It will be at least two frames up, so start there.
@@ -107,7 +104,6 @@ public class ZStreamLog
                 String callingClass = trace[i].getClassName();
                 callingClass = callingClass.substring(callingClass.lastIndexOf('.') + 1);
                 callingClass = callingClass.substring(callingClass.lastIndexOf('$') + 1);
-
                 caller = callingClass + "." + trace[i].getMethodName();
                 break;
             }
@@ -121,7 +117,6 @@ public class ZStreamLog
     static class MarkerLog
     {
         public static final boolean ENABLED = ZStreamLog.DEBUG;
-
         /**
          * Minimum duration from first marker to last in an marker log to warrant logging.
          */
@@ -138,7 +133,6 @@ public class ZStreamLog
             {
                 throw new IllegalStateException("Marker added to finished log");
             }
-
             mMarkers.add(new Marker(name, threadId, SystemClock.elapsedRealtime()));
         }
 
@@ -151,13 +145,11 @@ public class ZStreamLog
         public synchronized void finish(String header)
         {
             mFinished = true;
-
             long duration = getTotalDuration();
             if (duration <= MIN_DURATION_FOR_LOGGING_MS)
             {
                 return;
             }
-
             long prevTime = mMarkers.get(0).time;
             d("(%-4d ms) %s", duration, header);
             for (Marker marker : mMarkers)
@@ -189,7 +181,6 @@ public class ZStreamLog
             {
                 return 0;
             }
-
             long first = mMarkers.get(0).time;
             long last = mMarkers.get(mMarkers.size() - 1).time;
             return last - first;

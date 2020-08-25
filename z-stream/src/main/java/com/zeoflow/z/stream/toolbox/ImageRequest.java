@@ -13,7 +13,6 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 package com.zeoflow.z.stream.toolbox;
 
 import android.graphics.Bitmap;
@@ -41,12 +40,10 @@ public class ImageRequest extends Request<Bitmap>
      * Socket timeout in milliseconds for image requests
      */
     public static final int DEFAULT_IMAGE_TIMEOUT_MS = 1000;
-
     /**
      * Default number of retries for image requests
      */
     public static final int DEFAULT_IMAGE_MAX_RETRIES = 2;
-
     /**
      * Default backoff multiplier for image requests
      */
@@ -145,13 +142,11 @@ public class ImageRequest extends Request<Bitmap>
             int actualSecondary,
             ScaleType scaleType)
     {
-
         // If no dominant value at all, just return the actual.
         if ((maxPrimary == 0) && (maxSecondary == 0))
         {
             return actualPrimary;
         }
-
         // If ScaleType.FIT_XY fill the whole rectangle, ignore ratio.
         if (scaleType == ScaleType.FIT_XY)
         {
@@ -161,22 +156,18 @@ public class ImageRequest extends Request<Bitmap>
             }
             return maxPrimary;
         }
-
         // If primary is unspecified, scale primary to match secondary's scaling ratio.
         if (maxPrimary == 0)
         {
             double ratio = (double) maxSecondary / (double) actualSecondary;
             return (int) (actualPrimary * ratio);
         }
-
         if (maxSecondary == 0)
         {
             return maxPrimary;
         }
-
         double ratio = (double) actualSecondary / (double) actualPrimary;
         int resized = maxPrimary;
-
         // If ScaleType.CENTER_CROP fill the whole rectangle, preserve aspect ratio.
         if (scaleType == ScaleType.CENTER_CROP)
         {
@@ -186,7 +177,6 @@ public class ImageRequest extends Request<Bitmap>
             }
             return resized;
         }
-
         if ((resized * ratio) > maxSecondary)
         {
             resized = (int) (maxSecondary / ratio);
@@ -215,7 +205,6 @@ public class ImageRequest extends Request<Bitmap>
         {
             n *= 2;
         }
-
         return (int) n;
     }
 
@@ -261,7 +250,6 @@ public class ImageRequest extends Request<Bitmap>
             BitmapFactory.decodeByteArray(data, 0, data.length, decodeOptions);
             int actualWidth = decodeOptions.outWidth;
             int actualHeight = decodeOptions.outHeight;
-
             // Then compute the dimensions we would ideally like to decode to.
             int desiredWidth =
                     getResizedDimension(
@@ -269,7 +257,6 @@ public class ImageRequest extends Request<Bitmap>
             int desiredHeight =
                     getResizedDimension(
                             mMaxHeight, mMaxWidth, actualHeight, actualWidth, mScaleType);
-
             // Decode to the nearest power of two scaling factor.
             decodeOptions.inJustDecodeBounds = false;
             // TODO(ficus): Do we need this or is it okay since API 8 doesn't support it?
@@ -277,7 +264,6 @@ public class ImageRequest extends Request<Bitmap>
             decodeOptions.inSampleSize =
                     findBestSampleSize(actualWidth, actualHeight, desiredWidth, desiredHeight);
             Bitmap tempBitmap = BitmapFactory.decodeByteArray(data, 0, data.length, decodeOptions);
-
             // If necessary, scale down to the maximal acceptable size.
             if (tempBitmap != null
                     && (tempBitmap.getWidth() > desiredWidth
@@ -290,7 +276,6 @@ public class ImageRequest extends Request<Bitmap>
                 bitmap = tempBitmap;
             }
         }
-
         if (bitmap == null)
         {
             return Response.error(new ParseError(response));

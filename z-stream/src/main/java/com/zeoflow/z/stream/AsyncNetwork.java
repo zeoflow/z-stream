@@ -13,7 +13,6 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 package com.zeoflow.z.stream;
 
 import androidx.annotation.RestrictTo;
@@ -86,7 +85,6 @@ public abstract class AsyncNetwork implements Network
             Thread.currentThread().interrupt();
             throw new ZStreamError(e);
         }
-
         if (response.get() != null)
         {
             return response.get();

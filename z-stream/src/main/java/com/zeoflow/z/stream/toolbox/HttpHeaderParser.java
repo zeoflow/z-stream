@@ -13,7 +13,6 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 package com.zeoflow.z.stream.toolbox;
 
 import androidx.annotation.Nullable;
@@ -42,13 +41,9 @@ import java.util.TreeSet;
  */
 public class HttpHeaderParser
 {
-
     static final String HEADER_CONTENT_TYPE = "Content-Type";
-
     private static final String DEFAULT_CONTENT_CHARSET = "ISO-8859-1";
-
     private static final String RFC1123_PARSE_FORMAT = "EEE, dd MMM yyyy HH:mm:ss zzz";
-
     // Hardcode 'GMT' rather than using 'zzz' since some platforms append an extraneous +00:00.
     // See #287.
     private static final String RFC1123_OUTPUT_FORMAT = "EEE, dd MMM yyyy HH:mm:ss 'GMT'";
@@ -63,13 +58,11 @@ public class HttpHeaderParser
     public static Cache.Entry parseCacheHeaders(NetworkResponse response)
     {
         long now = System.currentTimeMillis();
-
         Map<String, String> headers = response.headers;
         if (headers == null)
         {
             return null;
         }
-
         long serverDate = 0;
         long lastModified = 0;
         long serverExpires = 0;
@@ -79,16 +72,13 @@ public class HttpHeaderParser
         long staleWhileRevalidate = 0;
         boolean hasCacheControl = false;
         boolean mustRevalidate = false;
-
         String serverEtag = null;
         String headerValue;
-
         headerValue = headers.get("Date");
         if (headerValue != null)
         {
             serverDate = parseDateAsEpoch(headerValue);
         }
-
         headerValue = headers.get("Cache-Control");
         if (headerValue != null)
         {
@@ -122,21 +112,17 @@ public class HttpHeaderParser
                 }
             }
         }
-
         headerValue = headers.get("Expires");
         if (headerValue != null)
         {
             serverExpires = parseDateAsEpoch(headerValue);
         }
-
         headerValue = headers.get("Last-Modified");
         if (headerValue != null)
         {
             lastModified = parseDateAsEpoch(headerValue);
         }
-
         serverEtag = headers.get("ETag");
-
         // Cache-Control takes precedence over an Expires header, even if both exist and Expires
         // is more restrictive.
         if (hasCacheControl)
@@ -149,7 +135,6 @@ public class HttpHeaderParser
             softExpire = now + (serverExpires - serverDate);
             finalExpire = softExpire;
         }
-
         Cache.Entry entry = new Cache.Entry();
         entry.data = response.data;
         entry.etag = serverEtag;
@@ -159,7 +144,6 @@ public class HttpHeaderParser
         entry.lastModified = lastModified;
         entry.responseHeaders = headers;
         entry.allResponseHeaders = response.allHeaders;
-
         return entry;
     }
 
@@ -185,7 +169,6 @@ public class HttpHeaderParser
             {
                 ZStreamLog.e(e, message, dateStr);
             }
-
             return 0;
         }
     }
@@ -236,7 +219,6 @@ public class HttpHeaderParser
                 }
             }
         }
-
         return defaultCharset;
     }
 
@@ -253,7 +235,6 @@ public class HttpHeaderParser
     // them from the .toolbox package), which would mean they'd become part of the ZStream API.
     // TODO: Consider obfuscating official releases so we can share utility methods between ZStream
     // and Toolbox without making them public APIs.
-
     static Map<String, String> toHeaderMap(List<Header> allHeaders)
     {
         Map<String, String> headers = new TreeMap<>(String.CASE_INSENSITIVE_ORDER);
@@ -298,7 +279,6 @@ public class HttpHeaderParser
                 headerNamesFromNetworkResponse.add(header.getName());
             }
         }
-
         // Second, add headers from the cache entry to the network response as long as
         // they didn't appear in the network response, which should take precedence.
         List<Header> combinedHeaders = new ArrayList<>(responseHeaders);
@@ -338,20 +318,16 @@ public class HttpHeaderParser
         {
             return Collections.emptyMap();
         }
-
         Map<String, String> headers = new HashMap<>();
-
         if (entry.etag != null)
         {
             headers.put("If-None-Match", entry.etag);
         }
-
         if (entry.lastModified > 0)
         {
             headers.put(
                     "If-Modified-Since", HttpHeaderParser.formatEpochAsRfc1123(entry.lastModified));
         }
-
         return headers;
     }
 }

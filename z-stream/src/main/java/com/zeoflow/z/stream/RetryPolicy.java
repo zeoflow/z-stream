@@ -13,7 +13,6 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 package com.zeoflow.z.stream;
 
 /**
@@ -39,7 +38,6 @@ package com.zeoflow.z.stream;
  */
 public interface RetryPolicy
 {
-
     /**
      * Returns the current timeout (used for logging).
      */

@@ -13,7 +13,6 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 package com.zeoflow.z.stream.toolbox;
 
 import android.os.SystemClock;
@@ -82,7 +81,6 @@ public class RequestFuture<T> implements Future<T>, Response.Listener<T>, Respon
         {
             return false;
         }
-
         if (!isDone())
         {
             mRequest.cancel();
@@ -119,12 +117,10 @@ public class RequestFuture<T> implements Future<T>, Response.Listener<T>, Respon
         {
             throw new ExecutionException(mException);
         }
-
         if (mResultReceived)
         {
             return mResult;
         }
-
         if (timeoutMs == null)
         {
             while (!isDone())
@@ -141,17 +137,14 @@ public class RequestFuture<T> implements Future<T>, Response.Listener<T>, Respon
                 nowMs = SystemClock.uptimeMillis();
             }
         }
-
         if (mException != null)
         {
             throw new ExecutionException(mException);
         }
-
         if (!mResultReceived)
         {
             throw new TimeoutException();
         }
-
         return mResult;
     }
 
