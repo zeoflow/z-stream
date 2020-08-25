@@ -35,5 +35,5 @@ dependencies {
 	implementation 'androidx.constraintlayout:constraintlayout:2.0.0'
 
 	implementation project(':z-stream')
-	implementation zeoflow.z_stream
+//	implementation zeoflow.z_stream
 }
