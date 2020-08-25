@@ -7,7 +7,7 @@ path: /docs/getting-started/
 
 ### 1. Depend on our library
 
-Password Strength for Android is available through Google's Maven Repository.
+Z-Stream is available through Google's Maven Repository.
 To use it:
 
 1.  Open the `build.gradle` file for your application.
@@ -28,7 +28,7 @@ To use it:
     ```groovy
       dependencies {
         // ...
-        implementation 'com.zeoflow:password-strength:<version>'
+        implementation 'com.zeoflow:z-stream:<version>'
         // ...
       }
     ```
@@ -39,5 +39,5 @@ to find the latest version of the library.
 
 ## Contributors
 
-Password Strength for Android welcomes contributions from the community. Check
+Z_Stream welcomes contributions from the community. Check
 out our [contributing guidelines](contributing.md) before getting started.

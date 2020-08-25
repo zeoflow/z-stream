@@ -7,9 +7,9 @@ path: /docs/contributing/
 
 # General Contributing Guidelines
 
-The Password Strength contributing policies and procedures can be found in the
-main Password Strength documentation repository’s
-[contributing page](https://github.com/zeoflow/password-strength/blob/CONTRIBUTING.md).
+The Z-Stream contributing policies and procedures can be found in the
+main Z-Stream documentation repository’s
+[contributing page](https://github.com/zeoflow/z-stream/blob/CONTRIBUTING.md).
 
 To make a contribution, you'll need to be able to build the library from source
 and run our tests.
@@ -21,7 +21,7 @@ library from source.
 
 ## Running Tests
 
-Password Strength for Android has JVM tests as well as Emulator tests.
+Z-Stream for Android has JVM tests as well as Emulator tests.
 
 To run the JVM tests, do:
 
@@ -40,7 +40,7 @@ and do:
 ## Code Conventions
 
 Since we all want to spend more time coding and less time fiddling with
-whitespace, Password Strength uses code conventions and styles to
+whitespace, Z-Stream uses code conventions and styles to
 encourage consistency. Code with a consistent style is easier (and less
 error-prone!) to review, maintain, and understand.
 
