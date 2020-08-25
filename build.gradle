@@ -83,7 +83,8 @@ ext {
 
 	zeoflow = [
 			material_elements: 'com.zeoflow:material-elements:1.1.0',
-			password_strength: 'com.zeoflow:password-strength:1.0.0'
+			password_strength: 'com.zeoflow:password-strength:1.0.0',
+			z_stream: 'com.zeoflow:z-stream:1.0.0'
 	]
 
 	deps = [

@@ -12,3 +12,8 @@ android {
 }
 
 apply from: 'rules.gradle'
+
+apply from: "${rootProject.projectDir}/z-stream/maven-push.gradle"
+repositories {
+    mavenCentral()
+}
